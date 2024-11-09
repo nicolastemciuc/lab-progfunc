@@ -89,16 +89,16 @@ lintComputeConstant = \expr -> case expr of
 
 {-
 Ejemplo:
-String que representa una expresión: "(2 + 2) + (1 + 1)" 
+String que representa una expresión: "(2 + 2) + (1 + 1)"
 AST correspondiente (este Expr me lo devuelve el Parser que implementaron ellos):
-Infix Add (Infix Add (Lit (LitInt 2)) (Lit (LitInt 2)))       
+Infix Add (Infix Add (Lit (LitInt 2)) (Lit (LitInt 2)))
           (Infix Add (Lit (LitInt 1)) (Lit (LitInt 1)))" AST correspondiente
 Resultado de la función lintComputeConstant aplicado al Expr:
-(Lit (LitInt 6), [LintCompCst (Infix Add (Lit (LitInt 2)) (Lit (LitInt 2))) 
+(Lit (LitInt 6), [LintCompCst (Infix Add (Lit (LitInt 2)) (Lit (LitInt 2)))
                               (Lit (LitInt 4))
-                  ,LintCompCst (Infix Add (Lit (LitInt 1)) (Lit (LitInt 1))) 
+                  ,LintCompCst (Infix Add (Lit (LitInt 1)) (Lit (LitInt 1)))
                               (Lit (LitInt 2))
-                  ,LintCompCst (Infix Add (Lit (LitInt 4)) (Lit (LitInt 2))) 
+                  ,LintCompCst (Infix Add (Lit (LitInt 4)) (Lit (LitInt 2)))
                               (Lit (LitInt 6))])
 Esto es el resultado de aplicar la función (resultado de aplicar las sugerencias y una lista de sugerencias)
 -}
@@ -111,7 +111,30 @@ Esto es el resultado de aplicar la función (resultado de aplicar las sugerencia
 -- Elimina chequeos de la forma e == True, True == e, e == False y False == e
 -- Construye sugerencias de la forma (LintBool e r)
 lintRedBool :: Linting Expr
-lintRedBool = undefined
+lintRedBool = \expr -> case expr of
+
+  -- Operacion logica de igualdad entre un literal booleano y variable
+  Infix Eq (Lit (LitBool x)) y -> if x then (y, [LintBool expr y])
+                                        else let result = App (Var"not") y
+                                        in (result, [LintBool expr result])
+
+  -- Operacion logica de igualdad entre un literal booleano y variable
+  Infix Eq x (Lit (LitBool y)) -> if y then (x, [LintBool expr x])
+                                        else let result = App (Var"not") x
+                                        in (result, [LintBool expr result])
+
+  -- Para expresiones compuestas, aplicar el linting en subexpresiones de izquierda a derecha
+  Infix op left right ->
+    let (left', leftSugg) = lintRedBool left
+        (right', rightSugg) = lintRedBool right
+        simplifiedExpr = Infix op left' right'
+    in if simplifiedExpr /= expr
+       then (simplifiedExpr, leftSugg ++ rightSugg)
+       else (expr, leftSugg ++ rightSugg)
+
+  -- Para expresiones que no se pueden simplificar, se devuelven sin cambios
+  _ -> (expr, [])
+
 
 
 --------------------------------------------------------------------------------
