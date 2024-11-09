@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Redundant lambda" #-}
 module Lintings where
 
 import AST
@@ -29,54 +31,61 @@ freeVariables = undefined
 -- lintComputeConstant :: Expr -> (Expr, [LintSugg])
 lintComputeConstant :: Linting Expr
 lintComputeConstant = \expr -> case expr of
-  -- Sumar literales enteros
-  Infix Add (Lit (LitInt x)) (Lit (LitInt y)) -> let result = Lit (LitInt (x + y))
-                                                 in (result, [LintCompCst expr result])
 
-  -- Restar literales enteros
-  Infix Sub (Lit (LitInt x)) (Lit (LitInt y)) -> let result = Lit (LitInt (x - y))
-                                                 in (result, [LintCompCst expr result])
+   -- Suma de literales enteros (solo si el resultado no es negativo)
+  Infix Add (Lit (LitInt x)) (Lit (LitInt y)) -> let result = x + y
+                                                 in if result >= 0 then let resultExpr = Lit (LitInt result) 
+                                                                        in  (resultExpr, [LintCompCst expr resultExpr])
+                                                    else (expr, [])
 
-  -- Multiplicar literales enteros
-  Infix Mult (Lit (LitInt x)) (Lit (LitInt y)) -> let result = Lit (LitInt (x * y))
-                                                  in (result, [LintCompCst expr result])
+  -- Resta de literales enteros (solo si el resultado no es negativo)
+  Infix Sub (Lit (LitInt x)) (Lit (LitInt y)) -> let result = x - y
+                                                 in if result >= 0 then let resultExpr = Lit (LitInt result) 
+                                                                        in  (resultExpr, [LintCompCst expr resultExpr])
+                                                    else (expr, [])
 
-  -- Dividir literales enteros (asumiendo división exacta)
-  Infix Div (Lit (LitInt x)) (Lit (LitInt y)) | y /= 0 -> let result = Lit (LitInt (x `div` y))
-                                                          in (result, [LintCompCst expr result])
+  -- Multiplicación de literales enteros (solo si el resultado no es negativo)
+  Infix Mult (Lit (LitInt x)) (Lit (LitInt y)) -> let result = x * y
+                                                  in if result >= 0 then let resultExpr = Lit (LitInt result) 
+                                                                        in  (resultExpr, [LintCompCst expr resultExpr])
+                                                     else (expr, [])
 
+  -- División de literales enteros (solo si el divisor no es 0 y resultado no es negativo)
+  Infix Div (Lit (LitInt x)) (Lit (LitInt y)) -> if y == 0 then (expr, [])
+                                                 else let result = x `div` y
+                                                      in if result >= 0 then let resultExpr = Lit (LitInt result) 
+                                                                             in  (resultExpr, [LintCompCst expr resultExpr])
+                                                         else (expr, [])
+  
   -- Comparación de igualdad entre literales enteros
   Infix Eq (Lit (LitInt x)) (Lit (LitInt y)) -> let result = Lit (LitBool (x == y))
                                                 in (result, [LintCompCst expr result])
 
   -- Comparación mayor que
-  Infix GTh (Lit (LitInt x)) (Lit (LitInt y)) ->
-    let result = Lit (LitBool (x > y))
-    in (result, [LintCompCst expr result])
+  Infix GTh (Lit (LitInt x)) (Lit (LitInt y)) -> let result = Lit (LitBool (x > y))
+                                                 in (result, [LintCompCst expr result])
 
   -- Comparación menor que
-  Infix LTh (Lit (LitInt x)) (Lit (LitInt y)) ->
-    let result = Lit (LitBool (x < y))
-    in (result, [LintCompCst expr result])
+  Infix LTh (Lit (LitInt x)) (Lit (LitInt y)) -> let result = Lit (LitBool (x < y))
+                                                 in (result, [LintCompCst expr result])
 
-  -- Operación lógica AND con literales booleanos
+  -- Operación lógica AND entre literales booleanos
   Infix And (Lit (LitBool x)) (Lit (LitBool y)) -> let result = Lit (LitBool (x && y))
                                                    in (result, [LintCompCst expr result])
 
-  -- Operación lógica OR con literales booleanos
+  -- Operación lógica OR entre literales booleanos
   Infix Or (Lit (LitBool x)) (Lit (LitBool y)) -> let result = Lit (LitBool (x || y))
                                                   in (result, [LintCompCst expr result])
 
-  -- Para expresiones compuestas, primero simplificar sus subexpresiones
+  -- Para expresiones compuestas, simplificar sus subexpresiones de izquierda a derecha
   Infix op left right -> let (left', leftSugg) = lintComputeConstant left
                              (right', rightSugg) = lintComputeConstant right
                              simplifiedExpr = Infix op left' right'
-                         in if simplifiedExpr /= expr then (simplifiedExpr, leftSugg ++ rightSugg)
-                            else (expr, leftSugg ++ rightSugg)
+                        in if simplifiedExpr /= expr then (simplifiedExpr, leftSugg ++ rightSugg)
+                           else (expr, leftSugg ++ rightSugg)
 
   -- Para expresiones que no se pueden simplificar, se devuelven sin cambios
   _ -> (expr, [])
-
 
 {-
 Ejemplo:
