@@ -1,1 +1,1 @@
-add =  x + 1 + (1 + 2 * 1)
+add =  if True then (x + if False then 1 else 2) else 3

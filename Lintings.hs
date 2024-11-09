@@ -115,12 +115,12 @@ lintRedBool = \expr -> case expr of
 
   -- Operacion logica de igualdad entre un literal booleano y variable
   Infix Eq (Lit (LitBool x)) y -> if x then (y, [LintBool expr y])
-                                        else let result = App (Var"not") y
+                                        else let result = App (Var "not") y
                                         in (result, [LintBool expr result])
 
   -- Operacion logica de igualdad entre un literal booleano y variable
   Infix Eq x (Lit (LitBool y)) -> if y then (x, [LintBool expr x])
-                                        else let result = App (Var"not") x
+                                        else let result = App (Var "not") x
                                         in (result, [LintBool expr result])
 
   -- Para expresiones compuestas, aplicar el linting en subexpresiones de izquierda a derecha
@@ -145,19 +145,81 @@ lintRedBool = \expr -> case expr of
 -- Sustitución de if con literal en la condición por la rama correspondiente
 -- Construye sugerencias de la forma (LintRedIf e r)
 lintRedIfCond :: Linting Expr
-lintRedIfCond = undefined
+lintRedIfCond = \expr -> case expr of
+
+  -- Si la condición es True, devolver la rama _then_
+  If (Lit (LitBool True)) x _ -> (x, [LintRedIf expr x])
+
+  -- Si la condición es False, devolver la rama _else_
+  If (Lit (LitBool False)) _ y -> (y, [LintRedIf expr y])
+
+  -- Para expresiones compuestas, aplicar el linting en subexpresiones de izquierda a derecha
+  Infix op left right ->
+    let (left', leftSugg) = lintRedIfCond left
+        (right', rightSugg) = lintRedIfCond right
+        simplifiedExpr = Infix op left' right'
+    in if simplifiedExpr /= expr
+       then (simplifiedExpr, leftSugg ++ rightSugg)
+       else (expr, leftSugg ++ rightSugg)
+
+  -- Para expresiones que no se pueden simplificar, se devuelven sin cambios
+  _ -> (expr, [])
 
 --------------------------------------------------------------------------------
 -- Sustitución de if por conjunción entre la condición y su rama _then_
 -- Construye sugerencias de la forma (LintRedIf e r)
 lintRedIfAnd :: Linting Expr
-lintRedIfAnd = undefined
+lintRedIfAnd = \expr -> case expr of
+
+  -- Si la rama then es True
+  If c (Lit (LitBool True)) e ->
+    let result = Infix Or c e
+    in (result, [LintRedIf expr result])
+
+  -- Si la rama then es False
+  If c (Lit (LitBool False)) e ->
+    let result = Infix And (App (Var "not") c) e
+    in (result, [LintRedIf expr result])
+
+  -- Para expresiones compuestas, aplicar el linting en subexpresiones de izquierda a derecha
+  Infix op left right ->
+    let (left', leftSugg) = lintRedIfAnd left
+        (right', rightSugg) = lintRedIfAnd right
+        simplifiedExpr = Infix op left' right'
+    in if simplifiedExpr /= expr
+       then (simplifiedExpr, leftSugg ++ rightSugg)
+       else (expr, leftSugg ++ rightSugg)
+
+  -- Para expresiones que no se pueden simplificar, se devuelven sin cambios
+  _ -> (expr, [])
 
 --------------------------------------------------------------------------------
 -- Sustitución de if por disyunción entre la condición y su rama _else_
 -- Construye sugerencias de la forma (LintRedIf e r)
 lintRedIfOr :: Linting Expr
-lintRedIfOr = undefined
+lintRedIfOr = \expr -> case expr of
+
+  -- Si la rama else es True
+  If c t (Lit (LitBool True)) ->
+    let result = Infix Or (App(Var "not") c) t
+    in (result, [LintRedIf expr result])
+
+  -- Si la rama else es False
+  If c t (Lit (LitBool False)) ->
+    let result = Infix And c t
+    in (result, [LintRedIf expr result])
+
+  -- Para expresiones compuestas, aplicar el linting en subexpresiones de izquierda a derecha
+  Infix op left right ->
+    let (left', leftSugg) = lintRedIfOr left
+        (right', rightSugg) = lintRedIfOr right
+        simplifiedExpr = Infix op left' right'
+    in if simplifiedExpr /= expr
+       then (simplifiedExpr, leftSugg ++ rightSugg)
+       else (expr, leftSugg ++ rightSugg)
+
+  -- Para expresiones que no se pueden simplificar, se devuelven sin cambios
+  _ -> (expr, [])
 
 --------------------------------------------------------------------------------
 -- Chequeo de lista vacía
