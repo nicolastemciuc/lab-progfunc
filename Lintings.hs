@@ -81,8 +81,8 @@ lintComputeConstant = \expr -> case expr of
   Infix op left right -> let (left', leftSugg) = lintComputeConstant left
                              (right', rightSugg) = lintComputeConstant right
                              simplifiedExpr = Infix op left' right'
-                        in if simplifiedExpr /= expr then (simplifiedExpr, leftSugg ++ rightSugg)
-                           else (expr, leftSugg ++ rightSugg)
+                         in if simplifiedExpr /= expr then (simplifiedExpr, leftSugg ++ rightSugg)
+                            else (expr, leftSugg ++ rightSugg)
 
   -- Para expresiones que no se pueden simplificar, se devuelven sin cambios
   _ -> (expr, [])
