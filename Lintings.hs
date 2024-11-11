@@ -226,9 +226,49 @@ lintRedIfOr = \expr -> case expr of
 --------------------------------------------------------------------------------
 -- Sugiere el uso de null para verificar si una lista es vacía
 -- Construye sugerencias de la forma (LintNull e r)
-
+-- listNull :: Expr -> (Expr, [LintSugg])
 lintNull :: Linting Expr
-lintNull = undefined
+lintNull expr = case expr of
+
+  -- Caso: e == []
+  Infix Eq e (Lit LitNil) ->
+    let (e', eSugg) = lintNull e
+        result = App (Var "null") e'
+        expr2 = Infix Eq e' (Lit LitNil)
+    in (result, eSugg ++ [LintNull expr2 result])
+
+  -- Caso: [] == e (simbólico)
+  Infix Eq (Lit LitNil) e ->
+    let (e', eSugg) = lintNull e
+        result = App (Var "null") e'
+        expr2 = Infix Eq (Lit LitNil) e'
+    in (result, eSugg ++ [LintNull expr2 result])
+
+  -- Caso: length e == 0
+  Infix Eq (App (Var "length") e) (Lit (LitInt 0)) ->
+    let (e', eSugg) = lintNull e
+        result = App (Var "null") e'
+        expr2 = App (Var "length") e'
+    in (result, eSugg ++ [LintNull expr result])
+
+  -- Caso: 0 == length e (simbólico)
+  Infix Eq (Lit (LitInt 0)) (App (Var "length") e) ->
+    let (e', eSugg) = lintNull e
+        result = App (Var "null") e'
+        expr2 = App (Var "length") e'
+    in (result, eSugg ++ [LintNull expr2 result])
+
+  -- Para expresiones compuestas, simplificar subexpresiones en orden de izquierda a derecha
+  Infix op left right ->
+    let (left', leftSugg) = lintNull left
+        (right', rightSugg) = lintNull right
+        simplifiedExpr = Infix op left' right'
+    in if simplifiedExpr /= expr
+       then (simplifiedExpr, leftSugg ++ rightSugg)
+       else (expr, leftSugg ++ rightSugg)
+
+  -- Para expresiones que no cumplen los patrones anteriores, devolver sin cambios
+  _ -> (expr, [])
 
 --------------------------------------------------------------------------------
 -- Eliminación de la concatenación
