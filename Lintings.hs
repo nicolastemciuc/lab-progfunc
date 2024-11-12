@@ -277,7 +277,27 @@ lintNull expr = case expr of
 -- Construye sugerencias de la forma (LintAppend e r)
 
 lintAppend :: Linting Expr
-lintAppend = undefined
+lintAppend expr = case expr of
+
+  -- Caso: e : [] ++ es
+  Infix Append (Infix Cons e (Lit LitNil)) es ->
+    let (e', eSugg) = lintAppend e
+        (es', esSugg) = lintAppend es
+        result = Infix Cons e' es'
+        expr2 = Infix Cons e' (Infix Append (Lit LitNil) es')
+    in (result, eSugg ++ esSugg ++ [LintAppend expr2 result])
+
+  -- Para expresiones compuestas, aplicar recursión en subexpresiones
+  Infix op left right ->
+    let (left', leftSugg) = lintAppend left
+        (right', rightSugg) = lintAppend right
+        simplifiedExpr = Infix op left' right'
+    in if simplifiedExpr /= expr
+       then (simplifiedExpr, leftSugg ++ rightSugg)
+       else (expr, leftSugg ++ rightSugg)
+
+  -- Para expresiones que no coinciden con el patrón, devolver sin cambios
+  _ -> (expr, [])
 
 --------------------------------------------------------------------------------
 -- Composición
