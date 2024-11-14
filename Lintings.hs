@@ -373,10 +373,27 @@ lintEta expr = case expr of
 -- Construye sugerencias de la forma (LintMap f r)
 -- lintMap :: FunDef -> (FunDef, [LintSugg])
 lintMap :: Linting FunDef
-lintMap = undefined
+lintMap (FunDef funcName expr) = case expr of
+  -- Detectamos si la función sigue el esquema `\l -> case l of ...`
+  Lam l (Case (Var l') baseCase (x, xs, recursiveCase)) ->
+    if l == l' && baseCase == Lit LitNil
+    then case recursiveCase of
+      -- Detectamos el caso recursivo `(x : xs) -> e : func xs`
+      Infix Cons e (App (Var funcName') (Var xs')) ->
+        if funcName == funcName' && xs == xs' && all (`notElem` freeVariables e) [funcName, xs, l]
+        then
+          let -- Construimos la expresión `map (\x -> e) l`
+              transformedExpr = App (Var "map") (Lam x e)
+              newFunDef = FunDef funcName transformedExpr
+              suggestion = LintMap (FunDef funcName expr) newFunDef
+          in (newFunDef, [suggestion])
+        else (FunDef funcName expr, [])
+      -- Si el caso recursivo no coincide, devolvemos la función sin cambios
+      _ -> (FunDef funcName expr, [])
+    else (FunDef funcName expr, [])
 
-
-
+  -- Si no se encuentra un patrón que coincida, devolvemos la función sin cambios
+  _ -> (FunDef funcName expr, [])
 
 --------------------------------------------------------------------------------
 -- Combinación de Lintings
