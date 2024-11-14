@@ -49,61 +49,92 @@ freeVariables expr = case expr of
 -- Construye sugerencias de la forma (LintCompCst e r)
 -- lintComputeConstant :: Expr -> (Expr, [LintSugg])
 lintComputeConstant :: Linting Expr
-lintComputeConstant = \expr -> case expr of
+lintComputeConstant expr = case expr of
 
-   -- Suma de literales enteros (solo si el resultado no es negativo)
-  Infix Add (Lit (LitInt x)) (Lit (LitInt y)) -> let result = x + y
-                                                 in if result >= 0 then let resultExpr = Lit (LitInt result)
-                                                                        in  (resultExpr, [LintCompCst expr resultExpr])
-                                                    else (expr, [])
+  -- Suma de literales enteros (solo si el resultado no es negativo)
+  Infix Add (Lit (LitInt x)) (Lit (LitInt y)) -> 
+    let result = x + y
+        resultExpr = Lit (LitInt result)
+    in if result >= 0 
+       then (resultExpr, [LintCompCst expr resultExpr])
+       else (expr, [])
 
   -- Resta de literales enteros (solo si el resultado no es negativo)
-  Infix Sub (Lit (LitInt x)) (Lit (LitInt y)) -> let result = x - y
-                                                 in if result >= 0 then let resultExpr = Lit (LitInt result)
-                                                                        in  (resultExpr, [LintCompCst expr resultExpr])
-                                                    else (expr, [])
+  Infix Sub (Lit (LitInt x)) (Lit (LitInt y)) -> 
+    let result = x - y
+        resultExpr = Lit (LitInt result)
+    in if result >= 0 
+       then (resultExpr, [LintCompCst expr resultExpr])
+       else (expr, [])
 
   -- Multiplicación de literales enteros (solo si el resultado no es negativo)
-  Infix Mult (Lit (LitInt x)) (Lit (LitInt y)) -> let result = x * y
-                                                  in if result >= 0 then let resultExpr = Lit (LitInt result)
-                                                                        in  (resultExpr, [LintCompCst expr resultExpr])
-                                                     else (expr, [])
+  Infix Mult (Lit (LitInt x)) (Lit (LitInt y)) -> 
+    let result = x * y
+        resultExpr = Lit (LitInt result)
+    in if result >= 0 
+       then (resultExpr, [LintCompCst expr resultExpr])
+       else (expr, [])
 
   -- División de literales enteros (solo si el divisor no es 0 y resultado no es negativo)
-  Infix Div (Lit (LitInt x)) (Lit (LitInt y)) -> if y == 0 then (expr, [])
-                                                 else let result = x `div` y
-                                                      in if result >= 0 then let resultExpr = Lit (LitInt result)
-                                                                             in  (resultExpr, [LintCompCst expr resultExpr])
-                                                         else (expr, [])
-
-  -- Comparación de igualdad entre literales enteros
-  Infix Eq (Lit (LitInt x)) (Lit (LitInt y)) -> let result = Lit (LitBool (x == y))
-                                                in (result, [LintCompCst expr result])
-
-  -- Comparación mayor que
-  Infix GTh (Lit (LitInt x)) (Lit (LitInt y)) -> let result = Lit (LitBool (x > y))
-                                                 in (result, [LintCompCst expr result])
-
-  -- Comparación menor que
-  Infix LTh (Lit (LitInt x)) (Lit (LitInt y)) -> let result = Lit (LitBool (x < y))
-                                                 in (result, [LintCompCst expr result])
+  Infix Div (Lit (LitInt x)) (Lit (LitInt y)) -> 
+    if y == 0 
+    then (expr, []) 
+    else let result = x `div` y
+             resultExpr = Lit (LitInt result)
+         in if result >= 0 
+            then (resultExpr, [LintCompCst expr resultExpr])
+            else (expr, [])
 
   -- Operación lógica AND entre literales booleanos
-  Infix And (Lit (LitBool x)) (Lit (LitBool y)) -> let result = Lit (LitBool (x && y))
-                                                   in (result, [LintCompCst expr result])
+  Infix And (Lit (LitBool x)) (Lit (LitBool y)) -> 
+    let result = Lit (LitBool (x && y))
+    in (result, [LintCompCst expr result])
 
   -- Operación lógica OR entre literales booleanos
-  Infix Or (Lit (LitBool x)) (Lit (LitBool y)) -> let result = Lit (LitBool (x || y))
-                                                  in (result, [LintCompCst expr result])
+  Infix Or (Lit (LitBool x)) (Lit (LitBool y)) -> 
+    let result = Lit (LitBool (x || y))
+    in (result, [LintCompCst expr result])
 
-  -- Para expresiones compuestas, simplificar sus subexpresiones de izquierda a derecha
-  Infix op left right -> let (left', leftSugg) = lintComputeConstant left
-                             (right', rightSugg) = lintComputeConstant right
-                             simplifiedExpr = Infix op left' right'
-                         in if simplifiedExpr /= expr then (simplifiedExpr, leftSugg ++ rightSugg)
-                            else (expr, leftSugg ++ rightSugg)
+  -- Comparación de igualdad entre literales enteros
+  Infix Eq (Lit (LitInt x)) (Lit (LitInt y)) -> 
+    let result = Lit (LitBool (x == y))
+    in (result, [LintCompCst expr result])
 
-  -- Para expresiones que no se pueden simplificar, se devuelven sin cambios
+  -- Comparación mayor que entre literales enteros
+  Infix GTh (Lit (LitInt x)) (Lit (LitInt y)) -> 
+    let result = Lit (LitBool (x > y))
+    in (result, [LintCompCst expr result])
+
+  -- Comparación menor que entre literales enteros
+  Infix LTh (Lit (LitInt x)) (Lit (LitInt y)) -> 
+    let result = Lit (LitBool (x < y))
+    in (result, [LintCompCst expr result])
+
+  -- Caso general para simplificar expresiones infijas, de izquierda a derecha
+  Infix op left right -> 
+    let (left', leftSugg) = lintComputeConstant left
+        (right', rightSugg) = lintComputeConstant right
+        simplifiedExpr = Infix op left' right'
+    in if simplifiedExpr /= expr 
+       then (simplifiedExpr, leftSugg ++ rightSugg)
+       else (expr, leftSugg ++ rightSugg)
+
+  App e1 e2 -> 
+    let (e1', e1Sugg) = lintComputeConstant e1
+        (e2', e2Sugg) = lintComputeConstant e2
+    in (App e1' e2', e1Sugg ++ e2Sugg)
+  
+  Lam x body -> 
+    let (body', bodySugg) = lintComputeConstant body
+    in (Lam x body', bodySugg)
+
+  Case e1 e2 (x, y, e3) ->
+    let (e1', e1Sugg) = lintComputeConstant e1
+        (e2', e2Sugg) = lintComputeConstant e2
+        (e3', e3Sugg) = lintComputeConstant e3
+    in (Case e1' e2' (x, y, e3'), e1Sugg ++ e2Sugg ++ e3Sugg)
+
+  -- Caso general para expresiones que no se simplifican
   _ -> (expr, [])
 
 --------------------------------------------------------------------------------
@@ -467,10 +498,8 @@ lint1 >==> lint2 = \expr -> let (expr1, suggestions1) = lint1 expr -- (expr1, su
 
 -- aplica las transformaciones 'lints' repetidas veces y de forma incremental,
 -- hasta que ya no generen más cambios en 'func'
-{-
-lintRec :: (a -> (a, [LintSugg])) -> a -> (a, [LintSugg])
-lints es (a -> (a, [LintSugg])) y func es a (a puede ser una expresion o una funcion)
--}
+-- lintRec :: (a -> (a, [LintSugg])) -> a -> (a, [LintSugg])
+-- lints es (a -> (a, [LintSugg])) y func es a (a puede ser una expresion o una funcion)
 lintRec :: Linting a -> Linting a
 lintRec lints func = let (newFunc, suggestions) = lints func
                      in if (length suggestions == 0) then (func, suggestions)  -- si no hay cambios, devolvemos el resultado actual
