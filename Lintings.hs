@@ -134,6 +134,12 @@ lintComputeConstant expr = case expr of
         (e3', e3Sugg) = lintComputeConstant e3
     in (Case e1' e2' (x, y, e3'), e1Sugg ++ e2Sugg ++ e3Sugg)
 
+  If e1 e2 e3 -> 
+    let (e1', e1Sugg) = lintComputeConstant e1
+        (e2', e2Sugg) = lintComputeConstant e2
+        (e3', e3Sugg) = lintComputeConstant e3
+    in (If e1' e2' e3', e1Sugg ++ e2Sugg ++ e3Sugg)
+
   -- Caso general para expresiones que no se simplifican
   _ -> (expr, [])
 
@@ -166,6 +172,27 @@ lintRedBool = \expr -> case expr of
        then (simplifiedExpr, leftSugg ++ rightSugg)
        else (expr, leftSugg ++ rightSugg)
 
+  App e1 e2 ->
+    let (e1', e1Sugg) = lintRedBool e1
+        (e2', e2Sugg) = lintRedBool e2
+    in (App e1' e2', e1Sugg ++ e2Sugg)
+  
+  Lam x body ->
+    let (body', bodySugg) = lintRedBool body
+    in (Lam x body', bodySugg)
+
+  Case e1 e2 (x, y, e3) ->
+    let (e1', e1Sugg) = lintRedBool e1
+        (e2', e2Sugg) = lintRedBool e2
+        (e3', e3Sugg) = lintRedBool e3
+    in (Case e1' e2' (x, y, e3'), e1Sugg ++ e2Sugg ++ e3Sugg)
+
+  If e1 e2 e3 ->
+    let (e1', e1Sugg) = lintRedBool e1
+        (e2', e2Sugg) = lintRedBool e2
+        (e3', e3Sugg) = lintRedBool e3
+    in (If e1' e2' e3', e1Sugg ++ e2Sugg ++ e3Sugg)
+  
   -- Para expresiones que no se pueden simplificar, se devuelven sin cambios
   _ -> (expr, [])
 
@@ -193,6 +220,21 @@ lintRedIfCond = \expr -> case expr of
     in if simplifiedExpr /= expr
        then (simplifiedExpr, leftSugg ++ rightSugg)
        else (expr, leftSugg ++ rightSugg)
+
+  App e1 e2 ->
+    let (e1', e1Sugg) = lintRedIfCond e1
+        (e2', e2Sugg) = lintRedIfCond e2
+    in (App e1' e2', e1Sugg ++ e2Sugg)
+
+  Lam x body ->
+    let (body', bodySugg) = lintRedIfCond body
+    in (Lam x body', bodySugg)
+  
+  Case e1 e2 (x, y, e3) ->
+    let (e1', e1Sugg) = lintRedIfCond e1
+        (e2', e2Sugg) = lintRedIfCond e2
+        (e3', e3Sugg) = lintRedIfCond e3
+    in (Case e1' e2' (x, y, e3'), e1Sugg ++ e2Sugg ++ e3Sugg)
 
   -- Para expresiones que no se pueden simplificar, se devuelven sin cambios
   _ -> (expr, [])
@@ -223,6 +265,21 @@ lintRedIfAnd = \expr -> case expr of
        then (simplifiedExpr, leftSugg ++ rightSugg)
        else (expr, leftSugg ++ rightSugg)
 
+  App e1 e2 ->
+    let (e1', e1Sugg) = lintRedIfAnd e1
+        (e2', e2Sugg) = lintRedIfAnd e2
+    in (App e1' e2', e1Sugg ++ e2Sugg)
+
+  Lam x body ->
+    let (body', bodySugg) = lintRedIfAnd body
+    in (Lam x body', bodySugg)
+  
+  Case e1 e2 (x, y, e3) ->
+    let (e1', e1Sugg) = lintRedIfAnd e1
+        (e2', e2Sugg) = lintRedIfAnd e2
+        (e3', e3Sugg) = lintRedIfAnd e3
+    in (Case e1' e2' (x, y, e3'), e1Sugg ++ e2Sugg ++ e3Sugg)
+
   -- Para expresiones que no se pueden simplificar, se devuelven sin cambios
   _ -> (expr, [])
 
@@ -251,6 +308,21 @@ lintRedIfOr = \expr -> case expr of
     in if simplifiedExpr /= expr
        then (simplifiedExpr, leftSugg ++ rightSugg)
        else (expr, leftSugg ++ rightSugg)
+      
+  App e1 e2 ->
+    let (e1', e1Sugg) = lintRedIfOr e1
+        (e2', e2Sugg) = lintRedIfOr e2
+    in (App e1' e2', e1Sugg ++ e2Sugg)
+  
+  Lam x body ->
+    let (body', bodySugg) = lintRedIfOr body
+    in (Lam x body', bodySugg)
+  
+  Case e1 e2 (x, y, e3) ->
+    let (e1', e1Sugg) = lintRedIfOr e1
+        (e2', e2Sugg) = lintRedIfOr e2
+        (e3', e3Sugg) = lintRedIfOr e3
+    in (Case e1' e2' (x, y, e3'), e1Sugg ++ e2Sugg ++ e3Sugg)
 
   -- Para expresiones que no se pueden simplificar, se devuelven sin cambios
   _ -> (expr, [])
@@ -315,6 +387,12 @@ lintNull expr = case expr of
         (e3', e3Sugg) = lintNull e3
     in (Case e1' e2' (x, y, e3'), e1Sugg ++ e2Sugg ++ e3Sugg)
 
+  If e1 e2 e3 -> 
+    let (e1', e1Sugg) = lintNull e1
+        (e2', e2Sugg) = lintNull e2
+        (e3', e3Sugg) = lintNull e3
+    in (If e1' e2' e3', e1Sugg ++ e2Sugg ++ e3Sugg)
+
   -- Otros patrones no son modificados, se devuelven sin cambios
   _ -> (expr, [])
 
@@ -359,6 +437,12 @@ lintAppend expr = case expr of
         (e2', e2Sugg) = lintAppend e2
         (e3', e3Sugg) = lintAppend e3
     in (Case e1' e2' (x, y, e3'), e1Sugg ++ e2Sugg ++ e3Sugg)
+  
+  If e1 e2 e3 ->
+    let (e1', e1Sugg) = lintAppend e1
+        (e2', e2Sugg) = lintAppend e2
+        (e3', e3Sugg) = lintAppend e3
+    in (If e1' e2' e3', e1Sugg ++ e2Sugg ++ e3Sugg)
 
   -- Otros casos: devolver la expresión sin cambios
   _ -> (expr, [])
@@ -435,6 +519,12 @@ lintEta expr = case expr of
         (e2', e2Sugg) = lintEta e2
         (e3', e3Sugg) = lintEta e3
     in (Case e1' e2' (x, y, e3'), e1Sugg ++ e2Sugg ++ e3Sugg)
+
+  If e1 e2 e3 ->
+    let (e1', e1Sugg) = lintEta e1
+        (e2', e2Sugg) = lintEta e2
+        (e3', e3Sugg) = lintEta e3
+    in (If e1' e2' e3', e1Sugg ++ e2Sugg ++ e3Sugg)
 
   -- Para cualquier otro patrón, devolver la expresión sin cambios
   _ -> (expr, [])
