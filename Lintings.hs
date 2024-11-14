@@ -12,19 +12,38 @@ import LintTypes
 
 -- Computa la lista de variables libres de una expresión
 freeVariables :: Expr -> [Name]
-freeVariables = undefined
+freeVariables expr = case expr of
+  -- Caso base: una variable `Var` es libre
+  Var x -> [x]
+
+  -- Literales no tienen variables libres
+  Lit _ -> []
+
+  -- En una expresión infija, las variables libres son las libres de ambas partes
+  Infix _ e1 e2 -> freeVariables e1 ++ freeVariables e2
+
+  -- En una aplicación, las variables libres son las de ambas subexpresiones
+  App e1 e2 -> freeVariables e1 ++ freeVariables e2
+
+  -- En una expresión lambda `Lam x e`, `x` queda ligada, entonces la removemos
+  Lam x e -> filter (/= x) (freeVariables e)
+
+  -- En una expresión `Case e1 e2 (x, y, e3)`, computamos las libres en `e1` y `e2` y, en `e3`,
+  -- quitamos `x` y `y` porque son patrones de una expresión case (ligados).
+  Case e1 e2 (x, y, e3) ->
+    freeVariables e1 ++ freeVariables e2 ++ filter (\v -> v /= x && v /= y) (freeVariables e3)
+
+  -- En una expresión condicional `If e1 e2 e3`, las libres son las de cada subexpresión
+  If e1 e2 e3 -> freeVariables e1 ++ freeVariables e2 ++ freeVariables e3
 
 
 --------------------------------------------------------------------------------
 -- LINTINGS
 --------------------------------------------------------------------------------
 
-
-
 --------------------------------------------------------------------------------
 -- Computación de constantes
 --------------------------------------------------------------------------------
-
 --------------------------------------------------------------------------------
 -- Reduce expresiones aritméticas/booleanas
 -- Construye sugerencias de la forma (LintCompCst e r)
@@ -34,29 +53,29 @@ lintComputeConstant = \expr -> case expr of
 
    -- Suma de literales enteros (solo si el resultado no es negativo)
   Infix Add (Lit (LitInt x)) (Lit (LitInt y)) -> let result = x + y
-                                                 in if result >= 0 then let resultExpr = Lit (LitInt result) 
+                                                 in if result >= 0 then let resultExpr = Lit (LitInt result)
                                                                         in  (resultExpr, [LintCompCst expr resultExpr])
                                                     else (expr, [])
 
   -- Resta de literales enteros (solo si el resultado no es negativo)
   Infix Sub (Lit (LitInt x)) (Lit (LitInt y)) -> let result = x - y
-                                                 in if result >= 0 then let resultExpr = Lit (LitInt result) 
+                                                 in if result >= 0 then let resultExpr = Lit (LitInt result)
                                                                         in  (resultExpr, [LintCompCst expr resultExpr])
                                                     else (expr, [])
 
   -- Multiplicación de literales enteros (solo si el resultado no es negativo)
   Infix Mult (Lit (LitInt x)) (Lit (LitInt y)) -> let result = x * y
-                                                  in if result >= 0 then let resultExpr = Lit (LitInt result) 
+                                                  in if result >= 0 then let resultExpr = Lit (LitInt result)
                                                                         in  (resultExpr, [LintCompCst expr resultExpr])
                                                      else (expr, [])
 
   -- División de literales enteros (solo si el divisor no es 0 y resultado no es negativo)
   Infix Div (Lit (LitInt x)) (Lit (LitInt y)) -> if y == 0 then (expr, [])
                                                  else let result = x `div` y
-                                                      in if result >= 0 then let resultExpr = Lit (LitInt result) 
+                                                      in if result >= 0 then let resultExpr = Lit (LitInt result)
                                                                              in  (resultExpr, [LintCompCst expr resultExpr])
                                                          else (expr, [])
-  
+
   -- Comparación de igualdad entre literales enteros
   Infix Eq (Lit (LitInt x)) (Lit (LitInt y)) -> let result = Lit (LitBool (x == y))
                                                 in (result, [LintCompCst expr result])
@@ -87,29 +106,13 @@ lintComputeConstant = \expr -> case expr of
   -- Para expresiones que no se pueden simplificar, se devuelven sin cambios
   _ -> (expr, [])
 
-{-
-Ejemplo:
-String que representa una expresión: "(2 + 2) + (1 + 1)"
-AST correspondiente (este Expr me lo devuelve el Parser que implementaron ellos):
-Infix Add (Infix Add (Lit (LitInt 2)) (Lit (LitInt 2)))
-          (Infix Add (Lit (LitInt 1)) (Lit (LitInt 1)))" AST correspondiente
-Resultado de la función lintComputeConstant aplicado al Expr:
-(Lit (LitInt 6), [LintCompCst (Infix Add (Lit (LitInt 2)) (Lit (LitInt 2)))
-                              (Lit (LitInt 4))
-                  ,LintCompCst (Infix Add (Lit (LitInt 1)) (Lit (LitInt 1)))
-                              (Lit (LitInt 2))
-                  ,LintCompCst (Infix Add (Lit (LitInt 4)) (Lit (LitInt 2)))
-                              (Lit (LitInt 6))])
-Esto es el resultado de aplicar la función (resultado de aplicar las sugerencias y una lista de sugerencias)
--}
-
 --------------------------------------------------------------------------------
 -- Eliminación de chequeos redundantes de booleanos
 --------------------------------------------------------------------------------
-
 --------------------------------------------------------------------------------
 -- Elimina chequeos de la forma e == True, True == e, e == False y False == e
 -- Construye sugerencias de la forma (LintBool e r)
+-- lintRedBool :: Expr -> (Expr, [LintSugg])
 lintRedBool :: Linting Expr
 lintRedBool = \expr -> case expr of
 
@@ -135,15 +138,13 @@ lintRedBool = \expr -> case expr of
   -- Para expresiones que no se pueden simplificar, se devuelven sin cambios
   _ -> (expr, [])
 
-
-
 --------------------------------------------------------------------------------
 -- Eliminación de if redundantes
 --------------------------------------------------------------------------------
-
 --------------------------------------------------------------------------------
 -- Sustitución de if con literal en la condición por la rama correspondiente
 -- Construye sugerencias de la forma (LintRedIf e r)
+-- lintRedIfCond :: Expr -> (Expr, [LintSugg])
 lintRedIfCond :: Linting Expr
 lintRedIfCond = \expr -> case expr of
 
@@ -168,6 +169,7 @@ lintRedIfCond = \expr -> case expr of
 --------------------------------------------------------------------------------
 -- Sustitución de if por conjunción entre la condición y su rama _then_
 -- Construye sugerencias de la forma (LintRedIf e r)
+-- lintRedIfAnd :: Expr -> (Expr, [LintSugg])
 lintRedIfAnd :: Linting Expr
 lintRedIfAnd = \expr -> case expr of
 
@@ -196,12 +198,13 @@ lintRedIfAnd = \expr -> case expr of
 --------------------------------------------------------------------------------
 -- Sustitución de if por disyunción entre la condición y su rama _else_
 -- Construye sugerencias de la forma (LintRedIf e r)
+-- lintRedIfOr :: Expr -> (Expr, [LintSugg])
 lintRedIfOr :: Linting Expr
 lintRedIfOr = \expr -> case expr of
 
   -- Si la rama else es True
   If c t (Lit (LitBool True)) ->
-    let result = Infix Or (App(Var "not") c) t
+    let result = Infix Or (App (Var "not") c) t
     in (result, [LintRedIf expr result])
 
   -- Si la rama else es False
@@ -223,6 +226,7 @@ lintRedIfOr = \expr -> case expr of
 
 --------------------------------------------------------------------------------
 -- Chequeo de lista vacía 
+--------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 -- Sugiere el uso de null para verificar si una lista es vacía
 -- Construye sugerencias de la forma (LintNull e r)
@@ -273,9 +277,10 @@ lintNull expr = case expr of
 --------------------------------------------------------------------------------
 -- Eliminación de la concatenación
 --------------------------------------------------------------------------------
+------------------------------------------------------------------------------
 -- se aplica en casos de la forma (e:[] ++ es), reemplazando por (e:es)
 -- Construye sugerencias de la forma (LintAppend e r)
-
+-- lintAppend :: Expr -> (Expr, [LintSugg])
 lintAppend :: Linting Expr
 lintAppend expr = case expr of
 
@@ -287,14 +292,6 @@ lintAppend expr = case expr of
         expr2 = Infix Cons e' (Infix Append (Lit LitNil) es')
     in (result, eSugg ++ esSugg ++ [LintAppend expr2 result])
 
-  -- Para expresiones compuestas, aplicar recursión en subexpresiones
-  Infix op left right ->
-    let (left', leftSugg) = lintAppend left
-        (right', rightSugg) = lintAppend right
-        simplifiedExpr = Infix op left' right'
-    in if simplifiedExpr /= expr
-       then (simplifiedExpr, leftSugg ++ rightSugg)
-       else (expr, leftSugg ++ rightSugg)
 
   -- Para expresiones que no coinciden con el patrón, devolver sin cambios
   _ -> (expr, [])
@@ -302,28 +299,31 @@ lintAppend expr = case expr of
 --------------------------------------------------------------------------------
 -- Composición
 --------------------------------------------------------------------------------
+----------------------------------------------------------------------------
 -- se aplica en casos de la forma (f (g t)), reemplazando por (f . g) t
 -- Construye sugerencias de la forma (LintComp e r)
 -- f (g x) = (f . g) x
 -- f (g (h x)) = (f . (g . h)) x
+-- f (g (h (i x))) = (f . (g . (h . i))) x
+-- lintComp :: Expr -> (Expr, [LintSugg])
 lintComp :: Linting Expr
 lintComp expr = case expr of
   -- Caso: f (g x) -> (f . g) x
   App f (App g x) ->
-    let (f', eSugg1) = lintComp f    
-        (g', eSugg2) = lintComp g    
-        (x', eSugg3) = lintComp x    
+    let (f', eSugg1) = lintComp f
+        (g', eSugg2) = lintComp g
+        (x', eSugg3) = lintComp x
     in case x' of
          -- Si x es de la forma (h z)
-         App h z -> 
+         App h z ->
            let (y, eSugg4) = lintComp (App g (App h z))
                (result, eSugg5) = lintComp (App f y)
            in (result, eSugg4 ++ eSugg5)
 
          -- Caso base de composición: f (g x) -> (f . g) x, x es solo una x
-         _ -> 
+         _ ->
            let result = App (Infix Comp f' g') x'
-               expr2 = App f' (App g' x') 
+               expr2 = App f' (App g' x')
            in (result, eSugg1 ++ eSugg2 ++ eSugg3 ++ [LintComp expr2 result])
 
   -- Para cualquier otro patrón, devolver la expresión sin cambios
@@ -332,21 +332,50 @@ lintComp expr = case expr of
 --------------------------------------------------------------------------------
 -- Eta Redución
 --------------------------------------------------------------------------------
+----------------------------------------------------------------------------
 -- se aplica en casos de la forma \x -> e x, reemplazando por e
 -- Construye sugerencias de la forma (LintEta e r)
-
+-- lintEta :: Expr -> (Expr, [LintSugg])
 lintEta :: Linting Expr
-lintEta = undefined
+lintEta expr = case expr of
+  -- Caso de eta-reducción: \x -> e x se convierte en e si x no está libre en e
+  Lam x (App e (Var v)) ->
+    if v == x && notElem x (freeVariables e)
+    then let (reducedExpr, eSugg) = lintEta e                  -- Aplicar lint recursivamente a `e`
+             originalExpr = Lam x (App reducedExpr (Var x))    -- Expresión antes de la reducción (v en Var?????)
+         in (reducedExpr, eSugg ++ [LintEta originalExpr reducedExpr])
+    else let (body', bodySugg) = lintEta (App e (Var v)) -- Sin reducción, aplicamos lint a `App e (Var v)
+         in (Lam x body', bodySugg)
 
+  -- Caso general: aplicamos lintEta recursivamente a las subexpresiones
+  Lam x body ->
+    let (body', bodySugg) = lintEta body
+    in (Lam x body', bodySugg)
+
+  App e1 e2 ->
+    let (e1', e1Sugg) = lintEta e1
+        (e2', e2Sugg) = lintEta e2
+    in (App e1' e2', e1Sugg ++ e2Sugg)
+
+  Infix op e1 e2 ->
+    let (e1', e1Sugg) = lintEta e1
+        (e2', e2Sugg) = lintEta e2
+    in (Infix op e1' e2', e1Sugg ++ e2Sugg)
+
+  -- Para cualquier otro patrón, devolver la expresión sin cambios
+  _ -> (expr, [])
 
 --------------------------------------------------------------------------------
 -- Eliminación de recursión con map
 --------------------------------------------------------------------------------
-
+----------------------------------------------------------------------------
 -- Sustituye recursión sobre listas por `map`
 -- Construye sugerencias de la forma (LintMap f r)
+-- lintMap :: FunDef -> (FunDef, [LintSugg])
 lintMap :: Linting FunDef
 lintMap = undefined
+
+
 
 
 --------------------------------------------------------------------------------

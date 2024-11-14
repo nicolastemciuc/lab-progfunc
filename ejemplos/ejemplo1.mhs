@@ -1,1 +1,1 @@
-add =  j (f (g (h x)))
+add =  \y-> (\x-> f y x) y
