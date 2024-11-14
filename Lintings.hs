@@ -308,31 +308,26 @@ lintAppend expr = case expr of
 -- f (g (h x)) = (f . (g . h)) x
 lintComp :: Linting Expr
 lintComp expr = case expr of
-  -- Caso: f (g (h x)) -> (f . (g . h)) x
-  App f (App g (App h x)) ->
-    let (f', eSugg1) = lintComp f    -- Simplificamos f recursivamente
-        (g', eSugg2) = lintComp g    -- Simplificamos g recursivamente
-        (h', eSugg3) = lintComp h    -- Simplificamos h recursivamente
-        (x', eSugg4) = lintComp x    -- Simplificamos x recursivamente
-        -- Aplicamos la composición internamente: (f . (g . h)) x
-        result = App (Infix Comp f' (Infix Comp g' h')) x'
-        expr2 = App f' (App g' (App h' x')) -- Expresión antes de la transformación
-    in (result, eSugg1 ++ eSugg2 ++ eSugg3 ++ eSugg4 ++ [LintComp expr2 result])
-    
   -- Caso: f (g x) -> (f . g) x
   App f (App g x) ->
-    let (f', eSugg1) = lintComp f    -- Simplificamos f recursivamente
-        (g', eSugg2) = lintComp g    -- Simplificamos g recursivamente
-        (x', eSugg3) = lintComp x    -- Simplificamos x recursivamente
-        -- Aplicamos composición: (f . g) x
-        result = App (Infix Comp f' g') x'
-        expr2 = App f' (App g' x')     -- Expresión antes de la transformación
-    in (result, eSugg1 ++ eSugg2 ++ eSugg3 ++ [LintComp expr2 result])
+    let (f', eSugg1) = lintComp f    
+        (g', eSugg2) = lintComp g    
+        (x', eSugg3) = lintComp x    
+    in case x' of
+         -- Si x es de la forma (h z)
+         App h z -> 
+           let (y, eSugg4) = lintComp (App g (App h z))
+               (result, eSugg5) = lintComp (App f y)
+           in (result, eSugg4 ++ eSugg5)
 
+         -- Caso base de composición: f (g x) -> (f . g) x, x es solo una x
+         _ -> 
+           let result = App (Infix Comp f' g') x'
+               expr2 = App f' (App g' x') 
+           in (result, eSugg1 ++ eSugg2 ++ eSugg3 ++ [LintComp expr2 result])
 
   -- Para cualquier otro patrón, devolver la expresión sin cambios
   _ -> (expr, [])
-
 
 --------------------------------------------------------------------------------
 -- Eta Redución
