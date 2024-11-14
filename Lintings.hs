@@ -235,43 +235,56 @@ lintNull :: Linting Expr
 lintNull expr = case expr of
 
   -- Caso: e == []
-  Infix Eq e (Lit LitNil) ->
+  Infix Eq e (Lit LitNil) -> 
     let (e', eSugg) = lintNull e
         result = App (Var "null") e'
         expr2 = Infix Eq e' (Lit LitNil)
     in (result, eSugg ++ [LintNull expr2 result])
 
   -- Caso: [] == e (simbólico)
-  Infix Eq (Lit LitNil) e ->
+  Infix Eq (Lit LitNil) e -> 
     let (e', eSugg) = lintNull e
         result = App (Var "null") e'
         expr2 = Infix Eq (Lit LitNil) e'
     in (result, eSugg ++ [LintNull expr2 result])
 
   -- Caso: length e == 0
-  Infix Eq (App (Var "length") e) (Lit (LitInt 0)) ->
+  Infix Eq (App (Var "length") e) (Lit (LitInt 0)) -> 
     let (e', eSugg) = lintNull e
         result = App (Var "null") e'
-        expr2 = App (Var "length") e'
-    in (result, eSugg ++ [LintNull expr result])
-
-  -- Caso: 0 == length e (simbólico)
-  Infix Eq (Lit (LitInt 0)) (App (Var "length") e) ->
-    let (e', eSugg) = lintNull e
-        result = App (Var "null") e'
-        expr2 = App (Var "length") e'
+        expr2 = Infix Eq (App (Var "length") e') (Lit (LitInt 0))
     in (result, eSugg ++ [LintNull expr2 result])
 
-  -- Para expresiones compuestas, simplificar subexpresiones en orden de izquierda a derecha
-  Infix op left right ->
+  -- Caso: 0 == length e (simbólico)
+  Infix Eq (Lit (LitInt 0)) (App (Var "length") e) -> 
+    let (e', eSugg) = lintNull e
+        result = App (Var "null") e'
+        expr2 = Infix Eq (Lit (LitInt 0)) (App (Var "length") e')
+    in (result, eSugg ++ [LintNull expr2 result])
+
+  -- Casos generales: recorrer recursivamente en orden de izquierda a derecha
+  Infix op left right -> 
     let (left', leftSugg) = lintNull left
         (right', rightSugg) = lintNull right
         simplifiedExpr = Infix op left' right'
-    in if simplifiedExpr /= expr
-       then (simplifiedExpr, leftSugg ++ rightSugg)
-       else (expr, leftSugg ++ rightSugg)
+    in (simplifiedExpr, leftSugg ++ rightSugg)
 
-  -- Para expresiones que no cumplen los patrones anteriores, devolver sin cambios
+  App e1 e2 -> 
+    let (e1', e1Sugg) = lintNull e1
+        (e2', e2Sugg) = lintNull e2
+    in (App e1' e2', e1Sugg ++ e2Sugg)
+
+  Lam x body -> 
+    let (body', bodySugg) = lintNull body
+    in (Lam x body', bodySugg)
+
+  Case e1 e2 (x, y, e3) -> 
+    let (e1', e1Sugg) = lintNull e1
+        (e2', e2Sugg) = lintNull e2
+        (e3', e3Sugg) = lintNull e3
+    in (Case e1' e2' (x, y, e3'), e1Sugg ++ e2Sugg ++ e3Sugg)
+
+  -- Otros patrones no son modificados, se devuelven sin cambios
   _ -> (expr, [])
 
 --------------------------------------------------------------------------------
@@ -284,16 +297,39 @@ lintNull expr = case expr of
 lintAppend :: Linting Expr
 lintAppend expr = case expr of
 
-  -- Caso: e : [] ++ es
+  -- Caso principal: e : [] ++ es -> e : es
   Infix Append (Infix Cons e (Lit LitNil)) es ->
     let (e', eSugg) = lintAppend e
         (es', esSugg) = lintAppend es
         result = Infix Cons e' es'
-        expr2 = Infix Cons e' (Infix Append (Lit LitNil) es')
+        expr2 = Infix Append (Infix Cons e' (Lit LitNil)) es'
     in (result, eSugg ++ esSugg ++ [LintAppend expr2 result])
 
+  -- Recursión en operadores infijos, aplicando lintAppend de izquierda a derecha
+  Infix op left right ->
+    let (left', leftSugg) = lintAppend left
+        (right', rightSugg) = lintAppend right
+    in (Infix op left' right', leftSugg ++ rightSugg)
 
-  -- Para expresiones que no coinciden con el patrón, devolver sin cambios
+  -- Recursión en aplicaciones
+  App e1 e2 ->
+    let (e1', e1Sugg) = lintAppend e1
+        (e2', e2Sugg) = lintAppend e2
+    in (App e1' e2', e1Sugg ++ e2Sugg)
+
+  -- Recursión en lambdas
+  Lam x body ->
+    let (body', bodySugg) = lintAppend body
+    in (Lam x body', bodySugg)
+
+  -- Recursión en case
+  Case e1 e2 (x, y, e3) ->
+    let (e1', e1Sugg) = lintAppend e1
+        (e2', e2Sugg) = lintAppend e2
+        (e3', e3Sugg) = lintAppend e3
+    in (Case e1' e2' (x, y, e3'), e1Sugg ++ e2Sugg ++ e3Sugg)
+
+  -- Otros casos: devolver la expresión sin cambios
   _ -> (expr, [])
 
 --------------------------------------------------------------------------------
@@ -340,27 +376,34 @@ lintEta :: Linting Expr
 lintEta expr = case expr of
   -- Caso de eta-reducción: \x -> e x se convierte en e si x no está libre en e
   Lam x (App e (Var v)) ->
-    if v == x && notElem x (freeVariables e)
-    then let (reducedExpr, eSugg) = lintEta e                  -- Aplicar lint recursivamente a `e`
-             originalExpr = Lam x (App reducedExpr (Var x))    -- Expresión antes de la reducción (v en Var?????)
-         in (reducedExpr, eSugg ++ [LintEta originalExpr reducedExpr])
-    else let (body', bodySugg) = lintEta (App e (Var v)) -- Sin reducción, aplicamos lint a `App e (Var v)
-         in (Lam x body', bodySugg)
-
-  -- Caso general: aplicamos lintEta recursivamente a las subexpresiones
+    let (reducedE, eSugg) = lintEta e                -- Reducir `e` primero, si es posible
+        originalExpr = Lam x (App reducedE (Var x))  -- Expresión original antes de la reducción
+    in if v == x && notElem x (freeVariables reducedE) 
+       then (reducedE, eSugg ++ [LintEta originalExpr reducedE])   -- Aplicar eta-reducción
+       else (Lam x (App reducedE (Var v)), eSugg)                  -- No se puede reducir más
+  
+  -- Aplicar lintEta recursivamente dentro de lambdas
   Lam x body ->
     let (body', bodySugg) = lintEta body
     in (Lam x body', bodySugg)
 
+  -- Aplicar lintEta recursivamente en aplicaciones
   App e1 e2 ->
     let (e1', e1Sugg) = lintEta e1
         (e2', e2Sugg) = lintEta e2
     in (App e1' e2', e1Sugg ++ e2Sugg)
 
+  -- Aplicar lintEta en expresiones infijas
   Infix op e1 e2 ->
     let (e1', e1Sugg) = lintEta e1
         (e2', e2Sugg) = lintEta e2
     in (Infix op e1' e2', e1Sugg ++ e2Sugg)
+
+  Case e1 e2 (x, y, e3) ->
+    let (e1', e1Sugg) = lintEta e1
+        (e2', e2Sugg) = lintEta e2
+        (e3', e3Sugg) = lintEta e3
+    in (Case e1' e2' (x, y, e3'), e1Sugg ++ e2Sugg ++ e3Sugg)
 
   -- Para cualquier otro patrón, devolver la expresión sin cambios
   _ -> (expr, [])
