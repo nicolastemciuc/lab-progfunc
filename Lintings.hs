@@ -217,22 +217,21 @@ lintRedBool = \expr -> case expr of
 -- Construye sugerencias de la forma (LintRedIf e r)
 -- lintRedIfCond :: Expr -> (Expr, [LintSugg])
 lintRedIfCond :: Linting Expr
-lintRedIfCond = \expr -> case expr of
+lintRedIfCond expr = case expr of
+  -- Simplificación para condiciones True o False
+  If (Lit (LitBool True)) t _ -> 
+    let (t', sugg) = lintRedIfCond t
+    in (t', LintRedIf expr t' : sugg)
 
-  -- Si la condición es True, devolver la rama _then_
-  If (Lit (LitBool True)) x _ -> (x, [LintRedIf expr x])
+  If (Lit (LitBool False)) _ e -> 
+    let (e', sugg) = lintRedIfCond e
+    in (e', LintRedIf expr e' : sugg)
 
-  -- Si la condición es False, devolver la rama _else_
-  If (Lit (LitBool False)) _ y -> (y, [LintRedIf expr y])
-
-  -- Para expresiones compuestas, aplicar el linting en subexpresiones de izquierda a derecha
-  Infix op left right ->
+  -- Recursión en subexpresiones
+  Infix op left right -> 
     let (left', leftSugg) = lintRedIfCond left
         (right', rightSugg) = lintRedIfCond right
-        simplifiedExpr = Infix op left' right'
-    in if simplifiedExpr /= expr
-       then (simplifiedExpr, leftSugg ++ rightSugg)
-       else (expr, leftSugg ++ rightSugg)
+    in (Infix op left' right', leftSugg ++ rightSugg)
 
   App e1 e2 ->
     let (e1', e1Sugg) = lintRedIfCond e1
@@ -242,14 +241,14 @@ lintRedIfCond = \expr -> case expr of
   Lam x body ->
     let (body', bodySugg) = lintRedIfCond body
     in (Lam x body', bodySugg)
-  
+
   Case e1 e2 (x, y, e3) ->
     let (e1', e1Sugg) = lintRedIfCond e1
         (e2', e2Sugg) = lintRedIfCond e2
         (e3', e3Sugg) = lintRedIfCond e3
     in (Case e1' e2' (x, y, e3'), e1Sugg ++ e2Sugg ++ e3Sugg)
 
-  -- Para expresiones que no se pueden simplificar, se devuelven sin cambios
+  -- Caso base, devolver la expresión sin cambios
   _ -> (expr, [])
 
 --------------------------------------------------------------------------------
@@ -257,26 +256,19 @@ lintRedIfCond = \expr -> case expr of
 -- Construye sugerencias de la forma (LintRedIf e r)
 -- lintRedIfAnd :: Expr -> (Expr, [LintSugg])
 lintRedIfAnd :: Linting Expr
-lintRedIfAnd = \expr -> case expr of
+lintRedIfAnd expr = case expr of
+  -- Simplificación de la forma if c then e else False
+  If c t (Lit (LitBool False)) ->
+    let (c', cSugg) = lintRedIfAnd c
+        (t', tSugg) = lintRedIfAnd t
+        result = Infix And c' t'
+    in (result, LintRedIf expr result : (cSugg ++ tSugg))
 
-  -- Si la rama then es True
-  If c (Lit (LitBool True)) e ->
-    let result = Infix Or c e
-    in (result, [LintRedIf expr result])
-
-  -- Si la rama then es False
-  If c (Lit (LitBool False)) e ->
-    let result = Infix And (App (Var "not") c) e
-    in (result, [LintRedIf expr result])
-
-  -- Para expresiones compuestas, aplicar el linting en subexpresiones de izquierda a derecha
-  Infix op left right ->
+  -- Recursión en subexpresiones
+  Infix op left right -> 
     let (left', leftSugg) = lintRedIfAnd left
         (right', rightSugg) = lintRedIfAnd right
-        simplifiedExpr = Infix op left' right'
-    in if simplifiedExpr /= expr
-       then (simplifiedExpr, leftSugg ++ rightSugg)
-       else (expr, leftSugg ++ rightSugg)
+    in (Infix op left' right', leftSugg ++ rightSugg)
 
   App e1 e2 ->
     let (e1', e1Sugg) = lintRedIfAnd e1
@@ -286,14 +278,14 @@ lintRedIfAnd = \expr -> case expr of
   Lam x body ->
     let (body', bodySugg) = lintRedIfAnd body
     in (Lam x body', bodySugg)
-  
+
   Case e1 e2 (x, y, e3) ->
     let (e1', e1Sugg) = lintRedIfAnd e1
         (e2', e2Sugg) = lintRedIfAnd e2
         (e3', e3Sugg) = lintRedIfAnd e3
     in (Case e1' e2' (x, y, e3'), e1Sugg ++ e2Sugg ++ e3Sugg)
 
-  -- Para expresiones que no se pueden simplificar, se devuelven sin cambios
+  -- Caso base, devolver la expresión sin cambios
   _ -> (expr, [])
 
 --------------------------------------------------------------------------------
@@ -301,45 +293,37 @@ lintRedIfAnd = \expr -> case expr of
 -- Construye sugerencias de la forma (LintRedIf e r)
 -- lintRedIfOr :: Expr -> (Expr, [LintSugg])
 lintRedIfOr :: Linting Expr
-lintRedIfOr = \expr -> case expr of
+lintRedIfOr expr = case expr of
+  -- Simplificación de la forma if c then True else e
+  If c (Lit (LitBool True)) e ->
+    let (c', cSugg) = lintRedIfOr c
+        (e', eSugg) = lintRedIfOr e
+        result = Infix Or c' e'
+    in (result, LintRedIf expr result : (cSugg ++ eSugg))
 
-  -- Si la rama else es True
-  If c t (Lit (LitBool True)) ->
-    let result = Infix Or (App (Var "not") c) t
-    in (result, [LintRedIf expr result])
-
-  -- Si la rama else es False
-  If c t (Lit (LitBool False)) ->
-    let result = Infix And c t
-    in (result, [LintRedIf expr result])
-
-  -- Para expresiones compuestas, aplicar el linting en subexpresiones de izquierda a derecha
-  Infix op left right ->
+  -- Recursión en subexpresiones
+  Infix op left right -> 
     let (left', leftSugg) = lintRedIfOr left
         (right', rightSugg) = lintRedIfOr right
-        simplifiedExpr = Infix op left' right'
-    in if simplifiedExpr /= expr
-       then (simplifiedExpr, leftSugg ++ rightSugg)
-       else (expr, leftSugg ++ rightSugg)
-      
+    in (Infix op left' right', leftSugg ++ rightSugg)
+
   App e1 e2 ->
     let (e1', e1Sugg) = lintRedIfOr e1
         (e2', e2Sugg) = lintRedIfOr e2
     in (App e1' e2', e1Sugg ++ e2Sugg)
-  
+
   Lam x body ->
     let (body', bodySugg) = lintRedIfOr body
     in (Lam x body', bodySugg)
-  
+
   Case e1 e2 (x, y, e3) ->
     let (e1', e1Sugg) = lintRedIfOr e1
         (e2', e2Sugg) = lintRedIfOr e2
         (e3', e3Sugg) = lintRedIfOr e3
     in (Case e1' e2' (x, y, e3'), e1Sugg ++ e2Sugg ++ e3Sugg)
 
-  -- Para expresiones que no se pueden simplificar, se devuelven sin cambios
+  -- Caso base, devolver la expresión sin cambios
   _ -> (expr, [])
-
 --------------------------------------------------------------------------------
 -- Chequeo de lista vacía 
 --------------------------------------------------------------------------------
