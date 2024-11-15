@@ -218,14 +218,19 @@ lintRedBool = \expr -> case expr of
 -- lintRedIfCond :: Expr -> (Expr, [LintSugg])
 lintRedIfCond :: Linting Expr
 lintRedIfCond expr = case expr of
-  -- Simplificación para condiciones True o False
-  If (Lit (LitBool True)) t _ -> 
-    let (t', sugg) = lintRedIfCond t
-    in (t', LintRedIf expr t' : sugg)
+  
+  -- Caso if True then t else e -> t
+  If (Lit (LitBool True)) t e -> let (t', sugg) = lintRedIfCond t
+                                     (e', sugg') = lintRedIfCond e
+                                     expr2 = If (Lit (LitBool True)) t' e'
+                                  in (t', sugg ++ sugg' ++ [LintRedIf expr2 t'])
+    
 
-  If (Lit (LitBool False)) _ e -> 
-    let (e', sugg) = lintRedIfCond e
-    in (e', LintRedIf expr e' : sugg)
+  -- Caso if False then t else e -> e
+  If (Lit (LitBool False)) t e -> let (t', sugg) = lintRedIfCond t
+                                      (e', sugg') = lintRedIfCond e
+                                      expr2 = If (Lit (LitBool False)) t' e'
+                                  in (e', sugg ++ sugg' ++ [LintRedIf expr2 e'])
 
   -- Recursión en subexpresiones
   Infix op left right -> 
@@ -257,12 +262,13 @@ lintRedIfCond expr = case expr of
 -- lintRedIfAnd :: Expr -> (Expr, [LintSugg])
 lintRedIfAnd :: Linting Expr
 lintRedIfAnd expr = case expr of
-  -- Simplificación de la forma if c then e else False
-  If c t (Lit (LitBool False)) ->
-    let (c', cSugg) = lintRedIfAnd c
-        (t', tSugg) = lintRedIfAnd t
-        result = Infix And c' t'
-    in (result, LintRedIf expr result : (cSugg ++ tSugg))
+  
+  -- Caso if c then e else False -> c && e
+  If c (Lit (LitBool False)) e -> let (c', cSugg) = lintRedIfOr c
+                                      (e', eSugg) = lintRedIfOr e
+                                      expr2 = If c' (Lit (LitBool False)) e'
+                                      result = Infix And c' e'
+                                  in (result, cSugg ++ eSugg ++ [LintRedIf expr2 result])
 
   -- Recursión en subexpresiones
   Infix op left right -> 
@@ -294,12 +300,15 @@ lintRedIfAnd expr = case expr of
 -- lintRedIfOr :: Expr -> (Expr, [LintSugg])
 lintRedIfOr :: Linting Expr
 lintRedIfOr expr = case expr of
-  -- Simplificación de la forma if c then True else e
-  If c (Lit (LitBool True)) e ->
-    let (c', cSugg) = lintRedIfOr c
-        (e', eSugg) = lintRedIfOr e
-        result = Infix Or c' e'
-    in (result, LintRedIf expr result : (cSugg ++ eSugg))
+
+    -- if c then True else e -> c || e
+  If c (Lit (LitBool True)) e -> let (c', cSugg) = lintRedIfAnd c
+                                     (e', eSugg) = lintRedIfAnd e
+                                     expr2 = If c' (Lit (LitBool True)) e' 
+                                     result = Infix Or c' e'
+                                     in (result, cSugg ++ eSugg ++ [LintRedIf expr2 result])
+
+  -- ! PUEDE FALTAR UN CASO 
 
   -- Recursión en subexpresiones
   Infix op left right -> 
