@@ -122,29 +122,68 @@ lintComputeConstant expr = case expr of
   
 
   -- Operación lógica AND entre literales booleanos
-  Infix And (Lit (LitBool x)) (Lit (LitBool y)) -> 
-    let result = Lit (LitBool (x && y))
-    in (result, [LintCompCst expr result])
+  Infix And e1 e2 -> let (e1', e1Sugg) = lintComputeConstant e1
+                         (e2', e2Sugg) = lintComputeConstant e2
+                          in case (e1', e2') of
+                            -- Si después de la recursión ambos son literales, calcular el resultado
+                            (Lit (LitBool x), Lit (LitBool y)) ->
+                              let result = Lit (LitBool (x && y))
+                                  expr2 = Infix And (Lit (LitBool x)) (Lit (LitBool y))
+                              in (result, e1Sugg ++ e2Sugg ++ [LintCompCst expr2 result])
+                            -- De lo contrario, devolver la expresión simplificada hasta ahora
+                            _ -> (Infix And e1' e2', e1Sugg ++ e2Sugg)
+
 
   -- Operación lógica OR entre literales booleanos
-  Infix Or (Lit (LitBool x)) (Lit (LitBool y)) -> 
-    let result = Lit (LitBool (x || y))
-    in (result, [LintCompCst expr result])
+  Infix Or e1 e2 -> let (e1', e1Sugg) = lintComputeConstant e1
+                        (e2', e2Sugg) = lintComputeConstant e2
+                        in case (e1', e2') of
+                          -- Si después de la recursión ambos son literales, calcular el resultado
+                          (Lit (LitBool x), Lit (LitBool y)) ->
+                            let result = Lit (LitBool (x || y))
+                                expr2 = Infix Or (Lit (LitBool x)) (Lit (LitBool y))
+                            in (result, e1Sugg ++ e2Sugg ++ [LintCompCst expr2 result])
+                          -- De lo contrario, devolver la expresión simplificada hasta ahora
+                          _ -> (Infix Or e1' e2', e1Sugg ++ e2Sugg)
 
   -- Comparación de igualdad entre literales enteros
-  Infix Eq (Lit (LitInt x)) (Lit (LitInt y)) -> 
-    let result = Lit (LitBool (x == y))
-    in (result, [LintCompCst expr result])
+  Infix Eq e1 e2 -> 
+    let (e1', e1Sugg) = lintComputeConstant e1
+        (e2', e2Sugg) = lintComputeConstant e2
+    in case (e1', e2') of
+      -- Si después de la recursión ambos son literales, calcular el resultado
+      (Lit (LitInt x), Lit (LitInt y)) ->
+        let result = Lit (LitBool (x == y))
+            expr2 = Infix Eq (Lit (LitInt x)) (Lit (LitInt y))
+        in (result, e1Sugg ++ e2Sugg ++ [LintCompCst expr2 result])
+      -- De lo contrario, devolver la expresión simplificada hasta ahora
+      _ -> (Infix Eq e1' e2', e1Sugg ++ e2Sugg)
 
   -- Comparación mayor que entre literales enteros
-  Infix GTh (Lit (LitInt x)) (Lit (LitInt y)) -> 
-    let result = Lit (LitBool (x > y))
-    in (result, [LintCompCst expr result])
+  Infix GTh e1 e2 -> 
+    let (e1', e1Sugg) = lintComputeConstant e1
+        (e2', e2Sugg) = lintComputeConstant e2
+    in case (e1', e2') of
+      -- Si después de la recursión ambos son literales, calcular el resultado
+      (Lit (LitInt x), Lit (LitInt y)) ->
+        let result = Lit (LitBool (x > y))
+            expr2 = Infix GTh (Lit (LitInt x)) (Lit (LitInt y))
+        in (result, e1Sugg ++ e2Sugg ++ [LintCompCst expr2 result])
+      -- De lo contrario, devolver la expresión simplificada hasta ahora
+      _ -> (Infix GTh e1' e2', e1Sugg ++ e2Sugg)
 
   -- Comparación menor que entre literales enteros
-  Infix LTh (Lit (LitInt x)) (Lit (LitInt y)) -> 
-    let result = Lit (LitBool (x < y))
-    in (result, [LintCompCst expr result])
+  Infix LTh e1 e2 -> 
+    let (e1', e1Sugg) = lintComputeConstant e1
+        (e2', e2Sugg) = lintComputeConstant e2
+    in case (e1', e2') of
+      -- Si después de la recursión ambos son literales, calcular el resultado
+      (Lit (LitInt x), Lit (LitInt y)) ->
+        let result = Lit (LitBool (x < y))
+            expr2 = Infix LTh (Lit (LitInt x)) (Lit (LitInt y))
+        in (result, e1Sugg ++ e2Sugg ++ [LintCompCst expr2 result])
+      -- De lo contrario, devolver la expresión simplificada hasta ahora
+      _ -> (Infix LTh e1' e2', e1Sugg ++ e2Sugg)
 
   -- Recursión en subexpresiones
   Infix op left right -> 
