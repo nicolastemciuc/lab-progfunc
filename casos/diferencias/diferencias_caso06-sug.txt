@@ -1,0 +1,17 @@
+1,16d0
+< Función: concat
+< **Sugerencia para:
+< x : [] ++ xs
+< Eliminar concatenación. Reemplazar por:
+< x : xs
+< --------------------------------------------------------------------------------
+< Función: dobleConcat
+< **Sugerencia para:
+< y : [] ++ ys
+< Eliminar concatenación. Reemplazar por:
+< y : ys
+< **Sugerencia para:
+< x : [] ++ (y : ys)
+< Eliminar concatenación. Reemplazar por:
+< x : (y : ys)
+< --------------------------------------------------------------------------------

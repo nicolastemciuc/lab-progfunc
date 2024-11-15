@@ -1,12 +1,10 @@
-3c3
+1,9d0
+< repeat = \x -> x : repeat x
+< 
 < iterate = \f -> \x -> x : (iterate f . f) x
----
-> iterate = \f -> \x -> x : iterate f (f x)
-7c7
+< 
+< scanl = \f -> \z -> \xs -> z : case xs of 
+<     [] -> []; 
 <     (x : xs) -> (scanl f . f z) x xs
----
->     (x : xs) -> scanl f (f z x) xs
-9c9
+< 
 < applyF2 = map (\p -> ((f . fst) p . snd) p)
----
-> applyF2 = map (\p -> f (fst p) (snd p))

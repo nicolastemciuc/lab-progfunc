@@ -1,4 +1,4 @@
-1c1
+1,3d0
 < foo = \f -> \g -> f . g
----
-> foo = \f -> \g -> \x -> f (g x)
+< 
+< incr = map (\x -> x + 1)

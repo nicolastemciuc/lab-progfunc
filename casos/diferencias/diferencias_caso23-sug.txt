@@ -1,18 +1,21 @@
-5,8c5
+1,31d0
+< Función: repeat
+< Sin sugerencias.
+< --------------------------------------------------------------------------------
+< Función: iterate
 < **Sugerencia para:
 < iterate f (f x)
 < Usar composición. Reemplazar por:
 < (iterate f . f) x
----
-> Sin sugerencias.
-11,14c8
+< --------------------------------------------------------------------------------
+< Función: scanl
 < **Sugerencia para:
 < scanl f (f z x)
 < Usar composición. Reemplazar por:
 < (scanl f . f z) x
----
-> Sin sugerencias.
-18,25d11
+< --------------------------------------------------------------------------------
+< Función: applyF2
+< **Sugerencia para:
 < f (fst p)
 < Usar composición. Reemplazar por:
 < (f . fst) p
@@ -21,11 +24,9 @@
 < Usar composición. Reemplazar por:
 < ((f . fst) p . snd) p
 < **Sugerencia para:
-28c14
+< applyF2 = \ps -> case ps of 
+<     [] -> []; 
 <     (p : ps) -> ((f . fst) p . snd) p : applyF2 ps
----
->     (p : ps) -> f (fst p) (snd p) : applyF2 ps
-30c16
+< Usar map. Reemplazar por:
 < applyF2 = map (\p -> ((f . fst) p . snd) p)
----
-> applyF2 = map (\p -> f (fst p) (snd p))
+< --------------------------------------------------------------------------------

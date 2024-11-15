@@ -1,6 +1,0 @@
-Función: foo
-**Sugerencia para:
-\rs -> f x rs
-Usar eta-reducción. Reemplazar por:
-f x
---------------------------------------------------------------------------------

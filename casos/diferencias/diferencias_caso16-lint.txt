@@ -1,16 +1,8 @@
-1c1
+1,7d0
 < foo = \x -> \y -> \z -> \f -> \g -> \h -> (f . (g . h x y)) z
----
-> foo = \x -> \y -> \z -> \f -> \g -> \h -> f (g (h x y z))
-3c3
+< 
 < bar = \x -> \y -> \z -> \f -> \g -> \h -> (f . (g . h)) x y z
----
-> bar = \x -> \y -> \z -> \f -> \g -> \h -> f (g (h x)) y z
-5c5
+< 
 < baz = \f -> \g -> \h -> \x -> \y -> f . (g . h x y)
----
-> baz = \f -> \g -> \h -> \x -> \y -> \z -> f (g (h x y z))
-7c7
+< 
 < qux = \f -> \g -> \h -> f . (g . h)
----
-> qux = \f -> \g -> \h -> \x -> f (g (h x))

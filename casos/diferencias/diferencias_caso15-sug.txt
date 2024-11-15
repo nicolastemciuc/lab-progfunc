@@ -1,9 +1,13 @@
-3,6d2
+1,32d0
+< Función: foo
+< **Sugerencia para:
 < if True then False else True
 < If redundante. Reemplazar por:
 < False
 < **Sugerencia para:
-10,31d5
+< \rs -> f x rs
+< Usar eta-reducción. Reemplazar por:
+< f x
 < **Sugerencia para:
 < False && False
 < Constante. Reemplazar por:
@@ -26,3 +30,4 @@
 < \x -> f x
 < Usar eta-reducción. Reemplazar por:
 < f
+< --------------------------------------------------------------------------------

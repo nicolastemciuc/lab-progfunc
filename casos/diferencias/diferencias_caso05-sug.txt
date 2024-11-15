@@ -1,11 +1,11 @@
-2,5c2
+1,26d0
+< Función: foo
 < **Sugerencia para:
 < f (g 3)
 < Usar composición. Reemplazar por:
 < (f . g) 3
----
-> Sin sugerencias.
-8,15c5
+< --------------------------------------------------------------------------------
+< Función: bar
 < **Sugerencia para:
 < f ((\y -> y - 2) z)
 < Usar composición. Reemplazar por:
@@ -14,9 +14,8 @@
 < (\x -> x + 1) ((f . (\y -> y - 2)) z)
 < Usar composición. Reemplazar por:
 < ((\x -> x + 1) . (f . (\y -> y - 2))) z
----
-> Sin sugerencias.
-18,25c8
+< --------------------------------------------------------------------------------
+< Función: baz
 < **Sugerencia para:
 < g (h x)
 < Usar composición. Reemplazar por:
@@ -25,5 +24,4 @@
 < f ((g . h) x)
 < Usar composición. Reemplazar por:
 < (f . (g . h)) x
----
-> Sin sugerencias.
+< --------------------------------------------------------------------------------

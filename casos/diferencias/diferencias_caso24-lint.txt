@@ -1,12 +1,18 @@
-7c7
+1,17d0
+< max = \x -> \y -> if x > y then x else y
+< 
+< maximum = \xs -> case xs of 
+<     [] -> 0; 
+<     (x : xs) -> case xs of 
+<         [] -> x; 
 <         (y : ys) -> (max x . maximum) xs
----
->         (y : ys) -> max x (maximum xs)
-13c13
+< 
+< mapF = map f
+< 
+< take = \n -> \xs -> case xs of 
+<     [] -> []; 
 <     (x : xs) -> ((\r -> if n > 0 then x : r else r) . take (n - 1)) xs
----
->     (x : xs) -> (\r -> if n > 0 then x : r else r) (take (n - 1) xs)
-17c17
+< 
+< reverse = \xs -> case xs of 
+<     [] -> []; 
 <     (x : xss) -> (append . reverse) xss (x : [])
----
->     (x : xss) -> append (reverse xss) (x : [])

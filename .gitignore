@@ -1,0 +1,36 @@
+# Haskell compiled files
+*.hi
+*.o
+*.chi
+*.chs.h
+*.dyn_o
+*.dyn_hi
+
+
+# GHCi specific files
+.ghci
+.ghc.environment.*
+
+# Generated binaries
+*.exe
+*.dll
+*.so
+*.dylib
+*.out
+*.jit
+*.p_o
+*.p_hi
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.ghc-work-*
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+casos/*
+
+Linter

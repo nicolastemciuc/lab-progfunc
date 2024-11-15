@@ -1,4 +1,5 @@
-2,25c2
+1,26d0
+< Función: foo
 < **Sugerencia para:
 < if True then True else False
 < If redundante. Reemplazar por:
@@ -23,5 +24,4 @@
 < 2 + 3
 < Constante. Reemplazar por:
 < 5
----
-> Sin sugerencias.
+< --------------------------------------------------------------------------------
