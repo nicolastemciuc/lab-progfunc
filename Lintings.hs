@@ -69,11 +69,53 @@ lintComputeConstant expr = case expr of
 
                         
   -- Resta de literales enteros (solo si el resultado no es negativo)
+  Infix Sub e1 e2 ->
+    let (e1', e1Sugg) = lintComputeConstant e1
+        (e2', e2Sugg) = lintComputeConstant e2
+    in case (e1', e2') of
+      -- Si después de la recursión ambos son literales, calcular el resultado
+      (Lit (LitInt x), Lit (LitInt y)) ->
+        let result = x - y
+            resultExpr = Lit (LitInt result)
+            expr2 = Infix Sub (Lit (LitInt x)) (Lit (LitInt y))
+        in if result >= 0 
+           then (resultExpr, e1Sugg ++ e2Sugg ++ [LintCompCst expr2 resultExpr])
+           else (expr, e1Sugg ++ e2Sugg)
+      -- De lo contrario, devolver la expresión simplificada hasta ahora
+      _ -> (Infix Sub e1' e2', e1Sugg ++ e2Sugg)
 
 
   -- Multiplicación de literales enteros (solo si el resultado no es negativo)
+  Infix Mult e1 e2 ->
+    let (e1', e1Sugg) = lintComputeConstant e1
+        (e2', e2Sugg) = lintComputeConstant e2
+    in case (e1', e2') of
+      -- Si después de la recursión ambos son literales, calcular el resultado
+      (Lit (LitInt x), Lit (LitInt y)) ->
+        let result = x * y
+            resultExpr = Lit (LitInt result)
+            expr2 = Infix Mult (Lit (LitInt x)) (Lit (LitInt y))
+        in if result >= 0 
+           then (resultExpr, e1Sugg ++ e2Sugg ++ [LintCompCst expr2 resultExpr])
+           else (expr, e1Sugg ++ e2Sugg)
+      -- De lo contrario, devolver la expresión simplificada hasta ahora
+      _ -> (Infix Mult e1' e2', e1Sugg ++ e2Sugg)
   
   -- División de literales enteros (solo si el divisor no es 0 y resultado no es negativo)
+  Infix Div e1 e2 ->
+    let (e1', e1Sugg) = lintComputeConstant e1
+        (e2', e2Sugg) = lintComputeConstant e2
+    in case (e1', e2') of
+      -- Si después de la recursión ambos son literales, calcular el resultado
+      (Lit (LitInt x), Lit (LitInt y)) ->
+        let result = if y /= 0 then x `div` y else 0
+            resultExpr = Lit (LitInt result)
+            expr2 = Infix Div (Lit (LitInt x)) (Lit (LitInt y))
+        in if result >= 0 
+           then (resultExpr, e1Sugg ++ e2Sugg ++ [LintCompCst expr2 resultExpr])
+           else (expr, e1Sugg ++ e2Sugg)
+      -- De lo contrario, devolver la expresión simplificada hasta ahora
+      _ -> (Infix Div e1' e2', e1Sugg ++ e2Sugg)
   
 
   -- Operación lógica AND entre literales booleanos
