@@ -1,4 +1,4 @@
-id = map (\b -> b || False)
+id = map (\b -> b && True)
 
 neg = map not
 

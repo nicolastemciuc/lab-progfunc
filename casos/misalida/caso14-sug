@@ -30,7 +30,7 @@ True
 **Sugerencia para:
 if x : [] ++ xs == [] then True else False
 If redundante. Reemplazar por:
-x : [] ++ xs == [] || False
+x : [] ++ xs == [] && True
 **Sugerencia para:
 x : [] ++ xs == []
 Usar null. Reemplazar por:

@@ -2,13 +2,13 @@ Función: id
 **Sugerencia para:
 if b then True else False
 If redundante. Reemplazar por:
-b || False
+b && True
 **Sugerencia para:
 id = \xs -> case xs of 
     [] -> []; 
-    (b : bs) -> (b || False) : id bs
+    (b : bs) -> (b && True) : id bs
 Usar map. Reemplazar por:
-id = map (\b -> b || False)
+id = map (\b -> b && True)
 --------------------------------------------------------------------------------
 Función: neg
 **Sugerencia para:

@@ -2,7 +2,7 @@ Función: foo
 **Sugerencia para:
 if True then x + if False then 1 else 2 else 3
 If redundante. Reemplazar por:
-x + if False then 1 else 2
+x + 2
 **Sugerencia para:
 if False then 1 else 2
 If redundante. Reemplazar por:

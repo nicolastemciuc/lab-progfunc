@@ -1,4 +1,0 @@
-5c5
-< baz = null (x : xs) && True
----
-> baz = null (x : xs) || False
