@@ -1,8 +1,0 @@
-1,7d0
-< foo = null d
-< 
-< bar = \x -> null a
-< 
-< baz = null (x : xs) && True
-< 
-< mapNull = map null

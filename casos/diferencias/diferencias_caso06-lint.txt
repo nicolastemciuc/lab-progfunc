@@ -1,4 +1,0 @@
-1,3d0
-< concat = x : xs
-< 
-< dobleConcat = x : (y : ys)

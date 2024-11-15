@@ -1,6 +1,0 @@
-1,5d0
-< foo = True
-< 
-< bar = False
-< 
-< baz = x
