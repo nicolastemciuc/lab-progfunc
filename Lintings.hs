@@ -153,15 +153,28 @@ lintComputeConstant expr = case expr of
 lintRedBool :: Linting Expr
 lintRedBool = \expr -> case expr of
 
-  -- Operacion logica de igualdad entre un literal booleano y variable
-  Infix Eq (Lit (LitBool x)) y -> if x then (y, [LintBool expr y])
-                                        else let result = App (Var "not") y
-                                        in (result, [LintBool expr result])
+  -- Caso e == True -> e
+  Infix Eq e (Lit (LitBool True)) ->  let (e', eSugg) = lintRedBool e
+                                          expr2 = Infix Eq e' (Lit (LitBool True))
+                                      in (e', eSugg ++ [LintBool expr2 e'])
+    
+  -- Caso True == e -> e
+  Infix Eq (Lit (LitBool True)) e ->  let (e', eSugg) = lintRedBool e
+                                          expr2 = Infix Eq (Lit (LitBool True)) e'
+                                      in (e', eSugg ++ [LintBool expr2 e'])
 
-  -- Operacion logica de igualdad entre un literal booleano y variable
-  Infix Eq x (Lit (LitBool y)) -> if y then (x, [LintBool expr x])
-                                        else let result = App (Var "not") x
-                                        in (result, [LintBool expr result])
+  -- Caso e == False -> not e
+  Infix Eq e (Lit (LitBool False)) -> let (e', eSugg) = lintRedBool e
+                                          expr2 = Infix Eq e' (Lit (LitBool False))
+                                          result = App (Var "not") e'
+                                      in (result, eSugg ++ [LintBool expr2 result])
+                   
+
+  -- Caso False == e -> not e
+  Infix Eq (Lit (LitBool False)) e -> let (e', eSugg) = lintRedBool e
+                                          expr2 = Infix Eq (Lit (LitBool False)) e'
+                                          result = App (Var "not") e'
+                                      in (result, eSugg ++ [LintBool expr2 result])
 
   -- Para expresiones compuestas, aplicar el linting en subexpresiones de izquierda a derecha
   Infix op left right ->
