@@ -232,6 +232,12 @@ lintRedIfCond expr = case expr of
                                       expr2 = If (Lit (LitBool False)) t' e'
                                   in (e', sugg ++ sugg' ++ [LintRedIf expr2 e'])
 
+  If c e t -> let (c', cSugg) = lintRedIfAnd c
+                  (e', eSugg) = lintRedIfAnd e
+                  (t', tSugg) = lintRedIfAnd t
+                  expr2 = If c' e' t'
+              in (expr2, cSugg ++ eSugg ++ tSugg)
+
   -- Recursión en subexpresiones
   Infix op left right -> 
     let (left', leftSugg) = lintRedIfCond left
@@ -264,11 +270,18 @@ lintRedIfAnd :: Linting Expr
 lintRedIfAnd expr = case expr of
   
   -- Caso if c then e else False -> c && e
-  If c (Lit (LitBool False)) e -> let (c', cSugg) = lintRedIfOr c
-                                      (e', eSugg) = lintRedIfOr e
-                                      expr2 = If c' (Lit (LitBool False)) e'
+  If c e (Lit (LitBool False)) -> let (c', cSugg) = lintRedIfAnd c
+                                      (e', eSugg) = lintRedIfAnd e
+                                      expr2 = If c' e' (Lit (LitBool False)) 
                                       result = Infix And c' e'
                                   in (result, cSugg ++ eSugg ++ [LintRedIf expr2 result])
+
+
+  If c e t -> let (c', cSugg) = lintRedIfAnd c
+                  (e', eSugg) = lintRedIfAnd e
+                  (t', tSugg) = lintRedIfAnd t
+                  expr2 = If c' e' t'
+              in (expr2, cSugg ++ eSugg ++ tSugg)
 
   -- Recursión en subexpresiones
   Infix op left right -> 
@@ -302,13 +315,19 @@ lintRedIfOr :: Linting Expr
 lintRedIfOr expr = case expr of
 
     -- if c then True else e -> c || e
-  If c (Lit (LitBool True)) e -> let (c', cSugg) = lintRedIfAnd c
-                                     (e', eSugg) = lintRedIfAnd e
+  If c (Lit (LitBool True)) e -> let (c', cSugg) = lintRedIfOr c
+                                     (e', eSugg) = lintRedIfOr e
                                      expr2 = If c' (Lit (LitBool True)) e' 
                                      result = Infix Or c' e'
                                      in (result, cSugg ++ eSugg ++ [LintRedIf expr2 result])
 
   -- ! PUEDE FALTAR UN CASO 
+
+  If c e t -> let (c', cSugg) = lintRedIfAnd c
+                  (e', eSugg) = lintRedIfAnd e
+                  (t', tSugg) = lintRedIfAnd t
+                  expr2 = If c' e' t'
+              in (expr2, cSugg ++ eSugg ++ tSugg)
 
   -- Recursión en subexpresiones
   Infix op left right -> 
