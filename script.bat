@@ -20,20 +20,21 @@ for /l %%i in (1,1,24) do (
     set "input_file=.\casos\caso!num!.mhs"
     set "output_file=.\casos\misalida\caso!num!-lint"
     set "diff_output=.\casos\diferencias\diferencias_caso!num!-lint.txt"
+    set "expected_output=.\casos\salidas\caso!num!-lint.mhs"
 
     if exist "!input_file!" (
         Linter.exe -c "!input_file!" > "!output_file!"
-        fc /w .\casos\salidas\caso!num!-lint.mhs "!output_file!" > "!diff_output!" 2>nul
-        if exist "!diff_output!" (
-            for /f %%A in ('find /c /v "" "!diff_output!"') do set "lines=%%A"
-            if !lines! GTR 0 (
+        if exist "!expected_output!" (
+            fc /w "!expected_output!" "!output_file!" > nul
+            if errorlevel 1 (
                 echo ❌!num!
+                fc /w "!expected_output!" "!output_file!" > "!diff_output!"
             ) else (
                 echo ✅!num!
-                del "!diff_output!"
+                del "!diff_output!" 2>nul
             )
         ) else (
-            echo ✅!num!
+            echo Expected output file "!expected_output!" not found!
         )
     ) else (
         echo File "!input_file!" not found!
@@ -48,20 +49,21 @@ for /l %%i in (1,1,24) do (
     set "input_file=.\casos\caso!num!.mhs"
     set "output_file=.\casos\misalida\caso!num!-sug"
     set "diff_output=.\casos\diferencias\diferencias_caso!num!-sug.txt"
+    set "expected_output=.\casos\salidas\caso!num!-sug"
 
     if exist "!input_file!" (
         Linter.exe -s "!input_file!" > "!output_file!"
-        fc /w .\casos\salidas\caso!num!-sug "!output_file!" > "!diff_output!" 2>nul
-        if exist "!diff_output!" (
-            for /f %%A in ('find /c /v "" "!diff_output!"') do set "lines=%%A"
-            if !lines! GTR 0 (
+        if exist "!expected_output!" (
+            fc /w "!expected_output!" "!output_file!" > nul
+            if errorlevel 1 (
                 echo ❌!num!
+                fc /w "!expected_output!" "!output_file!" > "!diff_output!"
             ) else (
                 echo ✅!num!
-                del "!diff_output!"
+                del "!diff_output!" 2>nul
             )
         ) else (
-            echo ✅!num!
+            echo Expected output file "!expected_output!" not found!
         )
     ) else (
         echo File "!input_file!" not found!
