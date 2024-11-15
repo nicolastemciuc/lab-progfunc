@@ -69,42 +69,12 @@ lintComputeConstant expr = case expr of
 
                         
   -- Resta de literales enteros (solo si el resultado no es negativo)
-  Infix Sub (Lit (LitInt x)) (Lit (LitInt y)) -> 
-    let result = x - y
-        resultExpr = Lit (LitInt result)
-    in if result >= 0 
-       then (resultExpr, [LintCompCst expr resultExpr])
-       else (expr, [])
-  
-  Infix Sub x y -> let (x', xSugg) = lintComputeConstant x
-                       (y', ySugg) = lintComputeConstant y
-                   in (Infix Sub x' y', xSugg ++ ySugg)
+
 
   -- Multiplicación de literales enteros (solo si el resultado no es negativo)
-  Infix Mult (Lit (LitInt x)) (Lit (LitInt y)) -> 
-    let result = x * y
-        resultExpr = Lit (LitInt result)
-    in if result >= 0 
-       then (resultExpr, [LintCompCst expr resultExpr])
-       else (expr, [])
-
-  Infix Mult x y -> let (x', xSugg) = lintComputeConstant x
-                        (y', ySugg) = lintComputeConstant y
-                    in (Infix Mult x' y', xSugg ++ ySugg)
-
+  
   -- División de literales enteros (solo si el divisor no es 0 y resultado no es negativo)
-  Infix Div (Lit (LitInt x)) (Lit (LitInt y)) -> 
-    if y == 0 
-    then (expr, []) 
-    else let result = x `div` y
-             resultExpr = Lit (LitInt result)
-         in if result >= 0 
-            then (resultExpr, [LintCompCst expr resultExpr])
-            else (expr, [])
-
-  Infix Div x y -> let (x', xSugg) = lintComputeConstant x
-                       (y', ySugg) = lintComputeConstant y
-                   in (Infix Div x' y', xSugg ++ ySugg)
+  
 
   -- Operación lógica AND entre literales booleanos
   Infix And (Lit (LitBool x)) (Lit (LitBool y)) -> 
