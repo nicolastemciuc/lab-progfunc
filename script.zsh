@@ -1,5 +1,9 @@
 #!/bin/zsh
 
+ghc -o Linter Linter.hs
+rm -rf ./casos/misalida
+rm -rf ./casos/diferencias
+
 # Create necessary directories
 mkdir -p ./casos/misalida
 mkdir -p ./casos/diferencias
