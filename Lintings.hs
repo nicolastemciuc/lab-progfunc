@@ -63,7 +63,7 @@ lintComputeConstant expr = case expr of
             expr2 = Infix Add (Lit (LitInt x)) (Lit (LitInt y))
         in if result >= 0 
            then (resultExpr, e1Sugg ++ e2Sugg ++ [LintCompCst expr2 resultExpr])
-           else (expr, e1Sugg ++ e2Sugg)
+           else (expr2, e1Sugg ++ e2Sugg)
       -- De lo contrario, devolver la expresión simplificada hasta ahora
       _ -> (Infix Add e1' e2', e1Sugg ++ e2Sugg)
 
@@ -80,7 +80,7 @@ lintComputeConstant expr = case expr of
             expr2 = Infix Sub (Lit (LitInt x)) (Lit (LitInt y))
         in if result >= 0 
            then (resultExpr, e1Sugg ++ e2Sugg ++ [LintCompCst expr2 resultExpr])
-           else (expr, e1Sugg ++ e2Sugg)
+           else (expr2, e1Sugg ++ e2Sugg)
       -- De lo contrario, devolver la expresión simplificada hasta ahora
       _ -> (Infix Sub e1' e2', e1Sugg ++ e2Sugg)
 
@@ -97,7 +97,7 @@ lintComputeConstant expr = case expr of
             expr2 = Infix Mult (Lit (LitInt x)) (Lit (LitInt y))
         in if result >= 0 
            then (resultExpr, e1Sugg ++ e2Sugg ++ [LintCompCst expr2 resultExpr])
-           else (expr, e1Sugg ++ e2Sugg)
+           else (expr2, e1Sugg ++ e2Sugg)
       -- De lo contrario, devolver la expresión simplificada hasta ahora
       _ -> (Infix Mult e1' e2', e1Sugg ++ e2Sugg)
   
@@ -108,12 +108,15 @@ lintComputeConstant expr = case expr of
     in case (e1', e2') of
       -- Si después de la recursión ambos son literales, calcular el resultado
       (Lit (LitInt x), Lit (LitInt y)) ->
-        let result = if y /= 0 then x `div` y else 0
-            resultExpr = Lit (LitInt result)
-            expr2 = Infix Div (Lit (LitInt x)) (Lit (LitInt y))
-        in if result >= 0 
-           then (resultExpr, e1Sugg ++ e2Sugg ++ [LintCompCst expr2 resultExpr])
-           else (expr, e1Sugg ++ e2Sugg)
+            if y /= 0 then let result = x `div` y 
+                               resultExpr = Lit (LitInt result)
+                               expr2 = Infix Div (Lit (LitInt x)) (Lit (LitInt y))
+                            in if result >= 0 
+                               then (resultExpr, e1Sugg ++ e2Sugg ++ [LintCompCst expr2 resultExpr])
+                               else (expr2, e1Sugg ++ e2Sugg)
+            else let expr3 = Infix Div (Lit (LitInt x)) (Lit (LitInt y))
+                 in (expr3, e1Sugg ++ e2Sugg) 
+              
       -- De lo contrario, devolver la expresión simplificada hasta ahora
       _ -> (Infix Div e1' e2', e1Sugg ++ e2Sugg)
   
