@@ -52,13 +52,22 @@ lintComputeConstant :: Linting Expr
 lintComputeConstant expr = case expr of
 
   -- Suma de literales enteros (solo si el resultado no es negativo)
-  Infix Add (Lit (LitInt x)) (Lit (LitInt y)) -> 
-    let result = x + y
-        resultExpr = Lit (LitInt result)
-    in if result >= 0 
-       then (resultExpr, [LintCompCst expr resultExpr])
-       else (expr, [])
+  Infix Add e1 e2 ->
+    let (e1', e1Sugg) = lintComputeConstant e1
+        (e2', e2Sugg) = lintComputeConstant e2
+    in case (e1', e2') of
+      -- Si después de la recursión ambos son literales, calcular el resultado
+      (Lit (LitInt x), Lit (LitInt y)) ->
+        let result = x + y
+            resultExpr = Lit (LitInt result)
+            expr2 = Infix Add (Lit (LitInt x)) (Lit (LitInt y))
+        in if result >= 0 
+           then (resultExpr, e1Sugg ++ e2Sugg ++ [LintCompCst expr2 resultExpr])
+           else (expr, e1Sugg ++ e2Sugg)
+      -- De lo contrario, devolver la expresión simplificada hasta ahora
+      _ -> (Infix Add e1' e2', e1Sugg ++ e2Sugg)
 
+                        
   -- Resta de literales enteros (solo si el resultado no es negativo)
   Infix Sub (Lit (LitInt x)) (Lit (LitInt y)) -> 
     let result = x - y
@@ -66,6 +75,10 @@ lintComputeConstant expr = case expr of
     in if result >= 0 
        then (resultExpr, [LintCompCst expr resultExpr])
        else (expr, [])
+  
+  Infix Sub x y -> let (x', xSugg) = lintComputeConstant x
+                       (y', ySugg) = lintComputeConstant y
+                   in (Infix Sub x' y', xSugg ++ ySugg)
 
   -- Multiplicación de literales enteros (solo si el resultado no es negativo)
   Infix Mult (Lit (LitInt x)) (Lit (LitInt y)) -> 
@@ -74,6 +87,10 @@ lintComputeConstant expr = case expr of
     in if result >= 0 
        then (resultExpr, [LintCompCst expr resultExpr])
        else (expr, [])
+
+  Infix Mult x y -> let (x', xSugg) = lintComputeConstant x
+                        (y', ySugg) = lintComputeConstant y
+                    in (Infix Mult x' y', xSugg ++ ySugg)
 
   -- División de literales enteros (solo si el divisor no es 0 y resultado no es negativo)
   Infix Div (Lit (LitInt x)) (Lit (LitInt y)) -> 
@@ -84,6 +101,10 @@ lintComputeConstant expr = case expr of
          in if result >= 0 
             then (resultExpr, [LintCompCst expr resultExpr])
             else (expr, [])
+
+  Infix Div x y -> let (x', xSugg) = lintComputeConstant x
+                       (y', ySugg) = lintComputeConstant y
+                   in (Infix Div x' y', xSugg ++ ySugg)
 
   -- Operación lógica AND entre literales booleanos
   Infix And (Lit (LitBool x)) (Lit (LitBool y)) -> 
@@ -110,7 +131,7 @@ lintComputeConstant expr = case expr of
     let result = Lit (LitBool (x < y))
     in (result, [LintCompCst expr result])
 
-  -- Caso general para simplificar expresiones infijas, de izquierda a derecha
+  -- Recursión en subexpresiones
   Infix op left right -> 
     let (left', leftSugg) = lintComputeConstant left
         (right', rightSugg) = lintComputeConstant right
@@ -176,7 +197,7 @@ lintRedBool = \expr -> case expr of
                                           result = App (Var "not") e'
                                       in (result, eSugg ++ [LintBool expr2 result])
 
-  -- Para expresiones compuestas, aplicar el linting en subexpresiones de izquierda a derecha
+  -- Recursión en subexpresiones
   Infix op left right ->
     let (left', leftSugg) = lintRedBool left
         (right', rightSugg) = lintRedBool right
@@ -232,13 +253,13 @@ lintRedIfCond expr = case expr of
                                       expr2 = If (Lit (LitBool False)) t' e'
                                   in (e', sugg ++ sugg' ++ [LintRedIf expr2 e'])
 
+  -- Recursión en subexpresiones
   If c e t -> let (c', cSugg) = lintRedIfAnd c
                   (e', eSugg) = lintRedIfAnd e
                   (t', tSugg) = lintRedIfAnd t
                   expr2 = If c' e' t'
               in (expr2, cSugg ++ eSugg ++ tSugg)
 
-  -- Recursión en subexpresiones
   Infix op left right -> 
     let (left', leftSugg) = lintRedIfCond left
         (right', rightSugg) = lintRedIfCond right
@@ -276,14 +297,13 @@ lintRedIfAnd expr = case expr of
                                       result = Infix And c' e'
                                   in (result, cSugg ++ eSugg ++ [LintRedIf expr2 result])
 
-
+  -- Recursión en subexpresiones
   If c e t -> let (c', cSugg) = lintRedIfAnd c
                   (e', eSugg) = lintRedIfAnd e
                   (t', tSugg) = lintRedIfAnd t
                   expr2 = If c' e' t'
               in (expr2, cSugg ++ eSugg ++ tSugg)
 
-  -- Recursión en subexpresiones
   Infix op left right -> 
     let (left', leftSugg) = lintRedIfAnd left
         (right', rightSugg) = lintRedIfAnd right
@@ -321,15 +341,13 @@ lintRedIfOr expr = case expr of
                                      result = Infix Or c' e'
                                      in (result, cSugg ++ eSugg ++ [LintRedIf expr2 result])
 
-  -- ! PUEDE FALTAR UN CASO 
-
+  -- Recursión en subexpresione
   If c e t -> let (c', cSugg) = lintRedIfAnd c
                   (e', eSugg) = lintRedIfAnd e
                   (t', tSugg) = lintRedIfAnd t
                   expr2 = If c' e' t'
               in (expr2, cSugg ++ eSugg ++ tSugg)
 
-  -- Recursión en subexpresiones
   Infix op left right -> 
     let (left', leftSugg) = lintRedIfOr left
         (right', rightSugg) = lintRedIfOr right
