@@ -574,6 +574,31 @@ lintComp expr = case expr of
                expr2 = App f' (App g' x')
            in (result, eSugg1 ++ eSugg2 ++ eSugg3 ++ [LintComp expr2 result])
 
+  -- Recursión en aplicaciones
+  App e1 e2 ->
+    let (e1', e1Sugg) = lintComp e1
+        (e2', e2Sugg) = lintComp e2
+    in (App e1' e2', e1Sugg ++ e2Sugg)
+
+  -- Recursión en lambdas
+  Lam x body ->
+    let (body', bodySugg) = lintComp body
+    in (Lam x body', bodySugg)
+
+  -- Recursión en case
+  Case e1 e2 (x, y, e3) ->
+    let (e1', e1Sugg) = lintComp e1
+        (e2', e2Sugg) = lintComp e2
+        (e3', e3Sugg) = lintComp e3
+    in (Case e1' e2' (x, y, e3'), e1Sugg ++ e2Sugg ++ e3Sugg)
+
+  If e1 e2 e3 -> 
+    let (e1', e1Sugg) = lintComp e1
+        (e2', e2Sugg) = lintComp e2
+        (e3', e3Sugg) = lintComp e3
+    in (If e1' e2' e3', e1Sugg ++ e2Sugg ++ e3Sugg)
+
+
   -- Para cualquier otro patrón, devolver la expresión sin cambios
   _ -> (expr, [])
 
