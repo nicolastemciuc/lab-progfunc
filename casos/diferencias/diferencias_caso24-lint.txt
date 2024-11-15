@@ -1,0 +1,12 @@
+7c7
+<         (y : ys) -> (max x . maximum) xs
+---
+>         (y : ys) -> max x (maximum xs)
+13c13
+<     (x : xs) -> ((\r -> if n > 0 then x : r else r) . take (n - 1)) xs
+---
+>     (x : xs) -> (\r -> if n > 0 then x : r else r) (take (n - 1) xs)
+17c17
+<     (x : xss) -> (append . reverse) xss (x : [])
+---
+>     (x : xss) -> append (reverse xss) (x : [])

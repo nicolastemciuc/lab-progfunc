@@ -1,0 +1,12 @@
+5c5
+< b && True
+---
+> b || False
+9c9
+<     (b : bs) -> (b && True) : id bs
+---
+>     (b : bs) -> (b || False) : id bs
+11c11
+< id = map (\b -> b && True)
+---
+> id = map (\b -> b || False)

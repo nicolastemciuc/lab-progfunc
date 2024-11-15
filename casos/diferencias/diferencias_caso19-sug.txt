@@ -1,0 +1,9 @@
+36,43d35
+< **Sugerencia para:
+< (\y -> y) (not x)
+< Usar composición. Reemplazar por:
+< ((\y -> y) . not) x
+< **Sugerencia para:
+< \x -> ((\y -> y) . not) x
+< Usar eta-reducción. Reemplazar por:
+< (\y -> y) . not

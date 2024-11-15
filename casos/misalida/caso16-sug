@@ -1,0 +1,19 @@
+Función: foo
+Sin sugerencias.
+--------------------------------------------------------------------------------
+Función: bar
+Sin sugerencias.
+--------------------------------------------------------------------------------
+Función: baz
+Sin sugerencias.
+--------------------------------------------------------------------------------
+Función: qux
+**Sugerencia para:
+\z -> f (g (h x)) y z
+Usar eta-reducción. Reemplazar por:
+f (g (h x)) y
+**Sugerencia para:
+\y -> f (g (h x)) y
+Usar eta-reducción. Reemplazar por:
+f (g (h x))
+--------------------------------------------------------------------------------

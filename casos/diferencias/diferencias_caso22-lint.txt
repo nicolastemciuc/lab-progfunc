@@ -1,0 +1,4 @@
+1c1
+< id = map (\b -> b && True)
+---
+> id = map (\b -> b || False)

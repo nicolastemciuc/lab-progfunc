@@ -1,0 +1,19 @@
+18,25d17
+< 1 + 2
+< Constante. Reemplazar por:
+< 3
+< **Sugerencia para:
+< 3 + 3
+< Constante. Reemplazar por:
+< 6
+< **Sugerencia para:
+29a22,25
+> 1 + 2
+> Constante. Reemplazar por:
+> 3
+> **Sugerencia para:
+33a30,33
+> 3 + 3
+> Constante. Reemplazar por:
+> 6
+> **Sugerencia para:

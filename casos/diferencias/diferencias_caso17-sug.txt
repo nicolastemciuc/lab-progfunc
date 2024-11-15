@@ -1,0 +1,17 @@
+39,46d38
+< id (id (1 + x))
+< Usar composición. Reemplazar por:
+< (id . id) (1 + x)
+< **Sugerencia para:
+< id ((id . id) (1 + x))
+< Usar composición. Reemplazar por:
+< (id . (id . id)) (1 + x)
+< **Sugerencia para:
+49c41
+<     (x : xs) -> (id . (id . id)) (1 + x) : incr xs
+---
+>     (x : xs) -> id (id (id (1 + x))) : incr xs
+51c43
+< incr = map (\x -> (id . (id . id)) (1 + x))
+---
+> incr = map (\x -> id (id (id (1 + x))))

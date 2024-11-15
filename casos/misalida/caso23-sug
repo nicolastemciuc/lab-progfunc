@@ -1,0 +1,17 @@
+Función: repeat
+Sin sugerencias.
+--------------------------------------------------------------------------------
+Función: iterate
+Sin sugerencias.
+--------------------------------------------------------------------------------
+Función: scanl
+Sin sugerencias.
+--------------------------------------------------------------------------------
+Función: applyF2
+**Sugerencia para:
+applyF2 = \ps -> case ps of 
+    [] -> []; 
+    (p : ps) -> f (fst p) (snd p) : applyF2 ps
+Usar map. Reemplazar por:
+applyF2 = map (\p -> f (fst p) (snd p))
+--------------------------------------------------------------------------------

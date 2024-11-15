@@ -1,0 +1,21 @@
+5,8c5
+< **Sugerencia para:
+< max x (maximum xs)
+< Usar composición. Reemplazar por:
+< (max x . maximum) xs
+---
+> Sin sugerencias.
+23,26c20
+< **Sugerencia para:
+< (\r -> if n > 0 then x : r else r) (take (n - 1) xs)
+< Usar composición. Reemplazar por:
+< ((\r -> if n > 0 then x : r else r) . take (n - 1)) xs
+---
+> Sin sugerencias.
+29,32c23
+< **Sugerencia para:
+< append (reverse xss)
+< Usar composición. Reemplazar por:
+< (append . reverse) xss
+---
+> Sin sugerencias.

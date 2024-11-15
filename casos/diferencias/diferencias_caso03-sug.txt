@@ -1,0 +1,32 @@
+3c3
+< if False then 1 else 2
+---
+> if True then x + if False then 1 else 2 else 3
+5c5
+< 2
+---
+> x + if False then 1 else 2
+7c7
+< if True then x + 2 else 3
+---
+> if False then 1 else 2
+9c9
+< x + 2
+---
+> 2
+13c13
+< if c then c else False
+---
+> if c then True else if c then c else False
+15c15
+< c && c
+---
+> c || if c then c else False
+17c17
+< if c then True else c && c
+---
+> if c then c else False
+19c19
+< c || c && c
+---
+> c && c

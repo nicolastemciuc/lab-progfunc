@@ -1,0 +1,29 @@
+2,5c2
+< **Sugerencia para:
+< f (g 3)
+< Usar composición. Reemplazar por:
+< (f . g) 3
+---
+> Sin sugerencias.
+8,15c5
+< **Sugerencia para:
+< f ((\y -> y - 2) z)
+< Usar composición. Reemplazar por:
+< (f . (\y -> y - 2)) z
+< **Sugerencia para:
+< (\x -> x + 1) ((f . (\y -> y - 2)) z)
+< Usar composición. Reemplazar por:
+< ((\x -> x + 1) . (f . (\y -> y - 2))) z
+---
+> Sin sugerencias.
+18,25c8
+< **Sugerencia para:
+< g (h x)
+< Usar composición. Reemplazar por:
+< (g . h) x
+< **Sugerencia para:
+< f ((g . h) x)
+< Usar composición. Reemplazar por:
+< (f . (g . h)) x
+---
+> Sin sugerencias.

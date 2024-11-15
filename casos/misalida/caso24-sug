@@ -1,0 +1,24 @@
+Función: max
+Sin sugerencias.
+--------------------------------------------------------------------------------
+Función: maximum
+Sin sugerencias.
+--------------------------------------------------------------------------------
+Función: mapF
+**Sugerencia para:
+mapF = \xs -> case xs of 
+    [] -> []; 
+    (x : xs) -> f x : mapF xs
+Usar map. Reemplazar por:
+mapF = map (\x -> f x)
+**Sugerencia para:
+\x -> f x
+Usar eta-reducción. Reemplazar por:
+f
+--------------------------------------------------------------------------------
+Función: take
+Sin sugerencias.
+--------------------------------------------------------------------------------
+Función: reverse
+Sin sugerencias.
+--------------------------------------------------------------------------------

@@ -1,0 +1,11 @@
+2,9c2
+< **Sugerencia para:
+< f (g x)
+< Usar composición. Reemplazar por:
+< (f . g) x
+< **Sugerencia para:
+< \x -> (f . g) x
+< Usar eta-reducción. Reemplazar por:
+< f . g
+---
+> Sin sugerencias.

@@ -1,0 +1,4 @@
+3c3
+< bar = (\y -> y) . not
+---
+> bar = \x -> (\y -> y) (not x)
