@@ -560,19 +560,17 @@ lintComp expr = case expr of
   App f (App g x) ->
     let (f', eSugg1) = lintComp f
         (g', eSugg2) = lintComp g
-        (x', eSugg3) = lintComp x
-    in case x' of
-         -- Si x es de la forma (h z)
-         App h z ->
-           let (y, eSugg4) = lintComp (App g (App h z))
-               (result, eSugg5) = lintComp (App f y)
-           in (result, eSugg4 ++ eSugg5)
-
+    in case x of
          -- Caso base de composición: f (g x) -> (f . g) x, x es solo una x
-         _ ->
-           let result = App (Infix Comp f' g') x'
-               expr2 = App f' (App g' x')
-           in (result, eSugg1 ++ eSugg2 ++ eSugg3 ++ [LintComp expr2 result])
+         Var _ ->
+           let result = App (Infix Comp f' g') x
+               expr2 = App f' (App g' x)
+           in (result, eSugg1 ++ eSugg2 ++ [LintComp expr2 result])
+
+         _ -> let (App h z, eSugg3) = lintComp (App g' x)
+                  result = App (Infix Comp f' h) z
+                  expr2 = App f' (App h z)
+              in (result, eSugg1 ++ eSugg2 ++ eSugg3 ++ [LintComp expr2 result])
 
   Infix op left right ->
     let (left', eSugg1) = lintComp left
