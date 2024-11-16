@@ -566,7 +566,7 @@ lintComp expr = case expr of
            let result = App (Infix Comp f' g') x
                expr2 = App f' (App g' x)
            in (result, eSugg1 ++ eSugg2 ++ [LintComp expr2 result])
-
+        -- Caso recursivo de composición: f (g (h x)) -> f ( (g . h) x) -> (f . (g . h)) x
          _ -> let (App h z, eSugg3) = lintComp (App g' x)
                   result = App (Infix Comp f' h) z
                   expr2 = App f' (App h z)
