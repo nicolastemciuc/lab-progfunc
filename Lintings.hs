@@ -308,9 +308,9 @@ lintRedIfCond expr = case expr of
                                   in (e', sugg ++ sugg' ++ [LintRedIf expr2 e'])
 
   -- Recursión en subexpresiones
-  If c e t -> let (c', cSugg) = lintRedIfAnd c
-                  (e', eSugg) = lintRedIfAnd e
-                  (t', tSugg) = lintRedIfAnd t
+  If c e t -> let (c', cSugg) = lintRedIfCond c
+                  (e', eSugg) = lintRedIfCond e
+                  (t', tSugg) = lintRedIfCond t
                   expr2 = If c' e' t'
               in (expr2, cSugg ++ eSugg ++ tSugg)
 
@@ -396,9 +396,9 @@ lintRedIfOr expr = case expr of
                                      in (result, cSugg ++ eSugg ++ [LintRedIf expr2 result])
 
   -- Recursión en subexpresione
-  If c e t -> let (c', cSugg) = lintRedIfAnd c
-                  (e', eSugg) = lintRedIfAnd e
-                  (t', tSugg) = lintRedIfAnd t
+  If c e t -> let (c', cSugg) = lintRedIfOr c
+                  (e', eSugg) = lintRedIfOr e
+                  (t', tSugg) = lintRedIfOr t
                   expr2 = If c' e' t'
               in (expr2, cSugg ++ eSugg ++ tSugg)
 
