@@ -574,6 +574,11 @@ lintComp expr = case expr of
                expr2 = App f' (App g' x')
            in (result, eSugg1 ++ eSugg2 ++ eSugg3 ++ [LintComp expr2 result])
 
+  Infix op left right ->
+    let (left', eSugg1) = lintComp left
+        (right', eSugg2) = lintComp right
+    in (Infix op left' right', eSugg1 ++ eSugg2)
+
   -- Recursión en aplicaciones
   App e1 e2 ->
     let (e1', e1Sugg) = lintComp e1
