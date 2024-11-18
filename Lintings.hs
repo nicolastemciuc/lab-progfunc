@@ -669,23 +669,23 @@ lintMap (FunDef funcName expr) = case expr of
 -- una transformación a nivel de función
 -- liftToFunc :: (Expr -> (Expr, [LintSugg])) -> FunDef -> (FunDef, [LintSugg])
 liftToFunc :: Linting Expr -> Linting FunDef
-liftToFunc lint (FunDef name expr) = let (newExpr, suggestions) = lint expr
-                                     in (FunDef name newExpr, suggestions)
+liftToFunc lint (FunDef name expr) = let (newExpr, eSugg) = lint expr
+                                     in (FunDef name newExpr, eSugg)
 
 -- encadenar transformaciones:
 -- (>==>):: Linting a -> Linting a -> Linting a  = (a -> (a, [LintSugg])) -> (a -> (a, [LintSugg])) -> a* -> (a, [LintSugg])
 -- a* es el expr que se le pasa como argumento a la lambda expression
 (>==>) :: Linting a -> Linting a -> Linting a
 lint1 >==> lint2 = \expr -> 
-  let (expr1, suggestions1) = lint1 expr -- (expr1, suggestions1) es el resultado de aplicar el primer linting
-      (expr2, suggestions2) = lint2 expr1 -- (expr2, suggestions2) es el resultado de aplicar el segundo linting
-  in (expr2, suggestions1 ++ suggestions2) -- retornamos la expresión final y la lista de sugerencias que se generaron en orden
+  let (expr1, eSugg1) = lint1 expr -- (expr1, suggestions1) es el resultado de aplicar el primer linting
+      (expr2, eSugg2) = lint2 expr1 -- (expr2, suggestions2) es el resultado de aplicar el segundo linting
+  in (expr2, eSugg1 ++ eSugg2) -- retornamos la expresión final y la lista de sugerencias que se generaron en orden
 
 -- aplica las transformaciones 'lints' repetidas veces y de forma incremental,
 -- hasta que ya no generen más cambios en 'func'
 -- lintRec :: (a -> (a, [LintSugg])) -> a -> (a, [LintSugg])
 lintRec :: Linting a -> Linting a
-lintRec lints func = let (newFunc, suggestions) = lints func
-                     in if (length suggestions == 0) then (func, suggestions)  -- si no hay cambios, devolvemos el resultado actual
-                        else let (finalFunc, finalSuggestions) = lintRec lints newFunc
-                             in (finalFunc, suggestions ++ finalSuggestions)  -- acumulamos las sugerencias
+lintRec lints func = let (newFunc, eSugg) = lints func
+                     in if (length eSugg == 0) then (func, eSugg)  -- si no hay cambios, devolvemos el resultado actual
+                        else let (finalFunc, finalSugg) = lintRec lints newFunc
+                             in (finalFunc, eSugg ++ finalSugg)  -- acumulamos las sugerencias
