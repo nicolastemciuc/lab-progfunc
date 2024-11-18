@@ -1,5 +1,3 @@
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# HLINT ignore "Redundant lambda" #-}
 module Lintings where
 
 import AST
@@ -675,13 +673,6 @@ liftToFunc lint (FunDef name expr) = let (newExpr, suggestions) = lint expr
                                      in (FunDef name newExpr, suggestions)
 
 -- encadenar transformaciones:
-{-
-OBS:
-e -> l1 -> e' ls    linting l1 toma una expresion e y genera una expresion e' y una lista de sugerencias ls
-e' -> l2 -> e'' ls' linting l2 toma una expresion e' y genera una expresion e'' y una lista de sugerencias ls'
-e -> l1 >==> l2 -> e'' (ls ++ ls')    
-Es decir que el resultado es la expresión final luego de haber aplicado los lintigs l1 y l2 y el append de las listas de sugerencias que se generaron en orden 
--}
 -- (>==>):: Linting a -> Linting a -> Linting a  = (a -> (a, [LintSugg])) -> (a -> (a, [LintSugg])) -> a* -> (a, [LintSugg])
 -- a* es el expr que se le pasa como argumento a la lambda expression
 (>==>) :: Linting a -> Linting a -> Linting a
