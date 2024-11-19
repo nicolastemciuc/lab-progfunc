@@ -362,7 +362,7 @@ lintRedIfAnd expr = case expr of
 lintRedIfOr :: Linting Expr
 lintRedIfOr expr = case expr of
 
-    -- if c then True else e -> c || e
+    -- Caso if c then True else e -> c || e
   If c (Lit (LitBool True)) e -> 
     let (c', cSugg) = lintRedIfOr c
         (e', eSugg) = lintRedIfOr e
@@ -419,7 +419,7 @@ lintNull expr = case expr of
         expr2 = Infix Eq e' (Lit LitNil)
     in (result, eSugg ++ [LintNull expr2 result])
 
-  -- Caso: [] == e (simbólico)
+  -- Caso: [] == e 
   Infix Eq (Lit LitNil) e -> 
     let (e', eSugg) = lintNull e
         result = App (Var "null") e'
@@ -433,7 +433,7 @@ lintNull expr = case expr of
         expr2 = Infix Eq (App (Var "length") e') (Lit (LitInt 0))
     in (result, eSugg ++ [LintNull expr2 result])
 
-  -- Caso: 0 == length e (simbólico)
+  -- Caso: 0 == length e
   Infix Eq (Lit (LitInt 0)) (App (Var "length") e) -> 
     let (e', eSugg) = lintNull e
         result = App (Var "null") e'
@@ -482,7 +482,7 @@ lintNull expr = case expr of
 lintAppend :: Linting Expr
 lintAppend expr = case expr of
 
-  -- Caso principal: e : [] ++ es -> e : es
+  -- Caso e : [] ++ es -> e : es
   Infix Append (Infix Cons e (Lit LitNil)) es ->
     let (e', eSugg) = lintAppend e
         (es', esSugg) = lintAppend es
@@ -534,7 +534,6 @@ lintAppend expr = case expr of
 -- lintComp :: Expr -> (Expr, [LintSugg])
 lintComp :: Linting Expr
 lintComp expr = case expr of
-  -- Caso: f (g x) -> (f . g) x
   App f (App g x) ->
     let (f', eSugg1) = lintComp f
         (g', eSugg2) = lintComp g
@@ -591,13 +590,13 @@ lintComp expr = case expr of
 -- lintEta :: Expr -> (Expr, [LintSugg])
 lintEta :: Linting Expr
 lintEta expr = case expr of
-  -- Caso de eta-reducción: \x -> e x se convierte en e si x no está libre en e
+  -- Caso \x -> e x se convierte en e si x no está libre en e
   Lam x (App e (Var v)) ->
-    let (reducedE, eSugg) = lintEta e                -- Reducir `e` primero, si es posible
-        originalExpr = Lam x (App reducedE (Var x))  -- Expresión original antes de la reducción
+    let (reducedE, eSugg) = lintEta e               
+        originalExpr = Lam x (App reducedE (Var x))  
     in if v == x && notElem x (freeVariables reducedE) 
-       then (reducedE, eSugg ++ [LintEta originalExpr reducedE])   -- Aplicar eta-reducción
-       else (Lam x (App reducedE (Var v)), eSugg)                  -- No se puede reducir más
+       then (reducedE, eSugg ++ [LintEta originalExpr reducedE])   
+       else (Lam x (App reducedE (Var v)), eSugg)                  
   
   ---- Recursión en subexpresiones ----
   Infix op e1 e2 -> 
@@ -640,7 +639,7 @@ lintEta expr = case expr of
 -- lintMap :: FunDef -> (FunDef, [LintSugg])
 lintMap :: Linting FunDef
 lintMap (FunDef funcName expr) = case expr of
-  -- Vemos si expr es de la forma \l -> case l of ...
+  -- Caso \l -> case l of ...
   Lam l (Case (Var l') baseCase (x, xs, recursiveCase)) ->
     if l == l' && baseCase == Lit LitNil
     then case recursiveCase of
